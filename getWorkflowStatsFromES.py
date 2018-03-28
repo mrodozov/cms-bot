@@ -1,7 +1,8 @@
-import json, sys
+#!/usr/bin/env python
+import json, sys, urllib3
 from time import time
-from es_utils import get_payload
-from ROOT import *
+from es_utils import get_payload_kerberos
+#from ROOT import *
 
 '''
 this program uses pyROOT, no brainer would be to set cmsenv before running it
@@ -12,82 +13,49 @@ def _format(s, **kwds):
 
 def getWorkflowStatsFromES(release='*', arch='*', lastNdays=7, page_size=0):
 
-    query_url = 'http://cmses-master02.cern.ch:9200/relvals_stats_*/_search'
-
+    query_url = 'https://es-cmssdt.cern.ch/krb/cmssdt-relvals_stats_summary*/_search?scroll=1m'
+    scroll_url = 'https://es-cmssdt.cern.ch/krb/_search/scroll'
     query_datsets = """
-        {
-          "query": {
-            "filtered": {
-              "query": {
-                "bool": {
-                  "should": [
-                    {
-                      "query_string": {
-                        "query": "release:%(release_cycle)s AND architecture:%(architecture)s", 
-                        "lowercase_expanded_terms": false
-                      }
-                    }
-                  ]
-                }
-              },
-              "filter": {
-                "bool": {
-                  "must": [
-                    {
-                      "range": {
-                        "@timestamp": {
-                          "from": %(start_time)s,
-                          "to": %(end_time)s
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "from": %(from)s,
-          "size": %(page_size)s
+    {
+    "query": {
+        "bool": {
+          "filter": [
+            { "range": { "@timestamp": { "gte": "%(start_time)s" }}}
+          ],
+          "must": [
+            { "match_phrase_prefix": { "release": "%(release_cycle)s" }},
+            { "match": {  "architecture": "%(architecture)s"}}
+          ]
         }
-        """
-    datasets = {}
-    ent_from = 0
-    json_out = []
-    info_request = False
-    queryInfo = {}
+      },
+    "from" : %(from)s,
+    "size" : %(page_size)s
+    }"""
 
+    queryInfo = {}
     queryInfo["end_time"] = int(time() * 1000)
     queryInfo["start_time"] = queryInfo["end_time"] - int(86400 * 1000 * lastNdays)
     queryInfo["architecture"] = arch
     queryInfo["release_cycle"] = release
     queryInfo["from"] = 0
+    queryInfo["page_size"] = 10000 #default
 
-    if page_size < 1:
-        info_request = True
-        queryInfo["page_size"] = 2
-    else:
-        queryInfo["page_size"] = page_size
+    es_data = json.loads(get_payload_kerberos(query_url, _format(query_datsets, **queryInfo)))
+    scroll_size = es_data['hits']['total']
+    final_scroll_data = []
+    final_scroll_data.append(es_data['hits']['hits'])
 
-    total_hits = 0
+    while (scroll_size > 0):
+        scroll_id = es_data['_scroll_id']
+        scroll_query = {"scroll_id": str(scroll_id), "scroll": "1m"}
 
-    while True:
-        queryInfo["from"] = ent_from
-        es_data = get_payload(query_url, _format(query_datsets, **queryInfo))  # here
-        content = json.loads(es_data)
-        content.pop("_shards", None)
-        total_hits = content['hits']['total']
-        if info_request:
-            info_request = False
-            queryInfo["page_size"] = total_hits
-            continue
-        hits = len(content['hits']['hits'])
-        if hits == 0: break
-        ent_from = ent_from + hits
-        json_out.append(content)
-        if ent_from >= total_hits:
-            break
+        es_data = json.loads(get_payload_kerberos(scroll_url, json.dumps(scroll_query)))
+        scroll_size = len(es_data['hits']['hits'])
+        if (scroll_size > 0):
+            final_scroll_data.append(es_data['hits']['hits'])
 
-    return json_out[0]['hits']['hits']
+    print json.dumps(final_scroll_data, indent=2, sort_keys=True, separators=(',', ': '))
+    return final_scroll_data[0]
 
 '''
 have a function that narrows the result to fields of interest, described in a list and in the given order
@@ -173,6 +141,8 @@ def compareMetrics(firstObject=None, secondObject=None,workflow=None,stepnum=Non
 
 if __name__ == "__main__":
 
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
     opts = None
     release = None
     fields = ['time', 'rss_max', 'cpu_avg', 'rss_75' , 'rss_25' , 'rss_avg' ]
@@ -190,7 +160,7 @@ if __name__ == "__main__":
     step_n = None
     if len(sys.argv) > 6: wf_n = sys.argv[6]
     if len(sys.argv) > 7: step_n = sys.argv[7]
-    print wf_n, step_n
+    #print wf_n, step_n
     
     json_out_first = getWorkflowStatsFromES(release_one, archone, days, page_size)
     json_out_second = getWorkflowStatsFromES(release_two, archtwo, days, page_size)
@@ -200,9 +170,10 @@ if __name__ == "__main__":
 
     comp_results = compareMetrics(filtered_first, filtered_second, wf_n, step_n)
     print json.dumps(comp_results, indent=2, sort_keys=True, separators=(',', ': '))
-
+    '''
     for hist in comp_results:
         histo = TH1F(hist, hist, 100000, -5000, 5000)
         for i in comp_results[hist]:
             histo.Fill(i)
         histo.SaveAs(hist+".root")
+    '''

@@ -1,9 +1,13 @@
 #!/usr/bin/env python
-import sys,urllib2 , json
+import sys, urllib2, json, requests, kerberos
 from datetime import datetime
 from os.path import exists
 from os import getenv
+from requests_kerberos import HTTPKerberosAuth, REQUIRED
+#NOTE: requests_kerberos IS NOT !!! part of requests. It brings requests as requrement and not only
 #Function to store data in elasticsearch
+
+#urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def resend_payload(hit, passwd_file="/data/secrets/github_hook_secret_cmsbot"):
   return send_payload(hit["_index"], hit["_type"], hit["_id"],json.dumps(hit["_source"]),passwd_file)
@@ -20,7 +24,7 @@ def es_get_passwd(passwd_file=None):
     print "Couldn't read the secrets file" , str(e)
     return ""
 
-def send_payload_new(index,document,id,payload,es_server,passwd_file=None):
+def send_payload_new(index, document, id, payload, es_server, passwd_file=None):
   index = 'cmssdt-' + index
   passwd=es_get_passwd(passwd_file)
   if not passwd: return False
@@ -44,7 +48,7 @@ def send_payload_old(index,document,id,payload,passwd_file=None):
   passwd=es_get_passwd(passwd_file)
   if not passwd: return False
 
-  url = "http://%s/%s/%s/" % ('cmses-master02.cern.ch:9200',index,document)
+  url = "http://%s/%s/%s/" % ('cmses-master02.cern.ch:9200', index, document)
   if id: url = url+id
   passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
   passman.add_password(None,url, 'elasticsearch', passwd)
@@ -96,7 +100,43 @@ def get_payload(url,query):
     print "Couldn't send data to elastic search" , str(e)
     return ""
 
+'''
+class KerberosTicket:
+  def __init__(self, service):
+    __, krb_context = kerberos.authGSSClientInit(service)
+    kerberos.authGSSClientStep(krb_context, "")
+    self._krb_context = krb_context
+    self.auth_header = ("Negotiate " +
+                        kerberos.authGSSClientResponse(krb_context))
+  def verify_response(self, auth_header):
+    # Handle comma-separated lists of authentication fields
+     for field in auth_header.split(","):
+      kind, __, details = field.strip().partition(" ")
+      if kind.lower() == "negotiate":
+        auth_details = details.strip()
+        break
+      else:
+        raise ValueError("Negotiate not found in %s" % auth_header)
+      # Finish the Kerberos handshake
+      krb_context = self._krb_context
+      if krb_context is None:
+        raise RuntimeError("Ticket already used for verification")
+      self._krb_context = None
+      kerberos.authGSSClientClean(krb_context)
+'''
+
+def get_payload_kerberos(url, query):
+  #short_url = url.split('/')[2]
+  #krb = KerberosTicket("HTTP@"+short_url)
+  #headers = {"Authorization": krb.auth_header}
+  #r = requests.post(url, headers=headers, verify=False, data=query)
+  kerb_auth = HTTPKerberosAuth(mutual_authentication=REQUIRED, force_preemptive=True)
+  r = requests.post(url, auth=kerb_auth, verify=False, data=query)
+  return r.text
+
+
 def format(s, **kwds): return s % kwds
+
 def es_query(index,query,start_time,end_time,page_start=0,page_size=100000,timestamp_field="@timestamp",lowercase_expanded_terms='false', es_host='http://cmses-master02.cern.ch:9200'):
   query_url='%s/%s/_search' % (es_host, index)
   query_tmpl = """{
@@ -110,7 +150,8 @@ def es_query(index,query,start_time,end_time,page_start=0,page_size=100000,times
     "size": %(page_size)s
   }"""
   query_str = format(query_tmpl, query=query,start_time=start_time,end_time=end_time,page_start=page_start,page_size=page_size,timestamp_field=timestamp_field,lowercase_expanded_terms=lowercase_expanded_terms)
-  return json.loads(get_payload(query_url, query_str))
+  print 'query url is ', query_url
+  return json.loads(get_payload_kerberos(query_url, query_str))
 
 def es_workflow_stats(es_hits,rss='rss_75', cpu='cpu_75'):
   wf_stats = {}
@@ -142,3 +183,14 @@ def es_workflow_stats(es_hits,rss='rss_75', cpu='cpu_75'):
                              "cpu_avg" : int((cpu_v+cpu_m)/2)
                            }
   return wf_stats
+
+query_tmpl = """{
+  "query": {
+    "regexp":{
+      "job_name": "cms-bot"
+      }
+    },
+  "size" : 1
+  }"""
+
+get_payload_kerberos("https://es-cmssdt.cern.ch/krb/cmssdt-jenkins/_search", query_tmpl)
