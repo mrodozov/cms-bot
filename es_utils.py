@@ -136,17 +136,13 @@ def get_payload_kerberos(url, query):
   es_data = json.loads(r.text)
   #print es_data
   scroll_url = 'https://es-cmssdt.cern.ch/krb/_search/scroll'
-
   scroll_size = es_data['hits']['total']
   final_scroll_data = es_data
-  #final_scroll_data.append(es_data['hits']['hits'])
 
   while (scroll_size > 0):
       scroll_id = es_data['_scroll_id']
       scroll_query = {"scroll_id": str(scroll_id), "scroll": "1m"}
-
-      r = requests.post(scroll_url, auth=kerb_auth ,verify=False, data=json.dumps(scroll_query))
-
+      r= requests.post(scroll_url, auth=kerb_auth ,verify=False, data=json.dumps(scroll_query))
       es_data = json.loads(r.text)
       scroll_size = len(es_data['hits']['hits'])
       if (scroll_size > 0):
@@ -170,13 +166,12 @@ def es_query(index,query,start_time,end_time,page_start=0,page_size=100000,times
     "from": %(page_start)s,
     "size": %(page_size)s
   }"""
-  query_str = format(query_tmpl, query=query,start_time=start_time,end_time=end_time,page_start=page_start,page_size=page_size,timestamp_field=timestamp_field,lowercase_expanded_terms=lowercase_expanded_terms)
+  query_str = format(query_tmpl, query=query, start_time=start_time,end_time=end_time,page_start=page_start,page_size=page_size,timestamp_field=timestamp_field,lowercase_expanded_terms=lowercase_expanded_terms)
   print 'query url is ', query_url
   return json.loads(get_payload(query_url, query_str))
 
 def es_krb_query(index,query,start_time,end_time,page_start=0,page_size=10000,timestamp_field="@timestamp",lowercase_expanded_terms='false', es_host='https://es-cmssdt.cern.ch/krb'):
   query_url='%s/%s/_search?scroll=1m' % (es_host, index)
-  # dont lowercase here
   query_tmpl = """{
   "query": {
     "bool": {
@@ -201,10 +196,9 @@ def es_krb_query(index,query,start_time,end_time,page_start=0,page_size=10000,ti
   "size": %(page_size)s
   }"""
 
-  query_str = format(query_tmpl, query=query, start_time=start_time, end_time=end_time,page_start=page_start,page_size=page_size,timestamp_field=timestamp_field,lowercase_expanded_terms=lowercase_expanded_terms)
-  #print 'query url is ', query_url
-
-  return json.loads(get_payload_kerberos(query_url, query_str))
+  query_str = format(query_tmpl, query=query, start_time=start_time, end_time=end_time, page_start=page_start,
+                     page_size=page_size, timestamp_field=timestamp_field, lowercase_expanded_terms=lowercase_expanded_terms)
+  return get_payload_kerberos(query_url, query_str)
 
 def es_workflow_stats(es_hits,rss='rss_75', cpu='cpu_75'):
   wf_stats = {}
@@ -237,18 +231,6 @@ def es_workflow_stats(es_hits,rss='rss_75', cpu='cpu_75'):
                            }
   return wf_stats
 
-'''
-query_tmpl = """{
-  "query": {
-    "regexp":{
-      "job_name": "cms-bot"
-      }
-    },
-  "size" : 1
-  }"""
-get_payload_kerberos("https://es-cmssdt.cern.ch/krb/cmssdt-jenkins/_search", query_tmpl)
-'''
-
 if __name__ == "__main__":
 
   query_url = 'https://es-cmssdt.cern.ch/krb/cmssdt-relvals_stats_summary*/_search?scroll=1m'
@@ -277,20 +259,65 @@ if __name__ == "__main__":
   }"""
 
   result = get_payload_kerberos(query_url, query)
-  final_data = result
-
-  #for i in final_data:
-  #    print i
-  print json.dumps(final_data, indent=2, sort_keys=True, separators=(',', ': '))
-
-  #query_string = 'exit_code:0 AND release:CMSSW_10_2_X_2018-04* AND architecture:slc6_amd64_gcc630'
-  #st = 1000*int(time()-(86400*10))
-  #et = 1000*int(time())
-
-  #result = es_query(index='relvals_stats_*', query=query_string, start_time=st,end_time= et)
-  #for i in result:
-  #    print i
+  with open('firstquery.json', "w") as firstquery:
+        firstquery.write(json.dumps(result,indent=2, sort_keys=True, separators=(',', ': ')))
+  for i in result:
+      print i
   #print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
 
-  #query_string = "release:/cmssw_10_2_x.*/ AND architecture:/slc7_amd64_gcc.*/ AND (workflow:2.0) AND exit_code: 0"
-  #es_krb_query()
+  query_url= 'http://cmses-master02.cern.ch:9200/relvals_stats_*/_search'
+  query_datsets = """
+      {
+        "query": {
+          "filtered": {
+            "query": {
+              "bool": {
+                "should": [
+                  {
+                    "query_string": {
+                      "query": "release:CMSSW_10_2_X* AND architecture:slc6_amd64_gcc630*", 
+                      "lowercase_expanded_terms": false
+                    }
+                  }
+                ]
+              }
+            },
+            "filter": {
+              "bool": {
+                "must": [
+                  {
+                    "range": {
+                      "@timestamp": {
+                        "gte": "1522241504472",
+                        "lt": "1522327904472"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "from": 0,
+        "size": 10000
+      }
+      """
+
+  result = json.loads(get_payload(query_url, query_datsets))
+  with open('secondquery.json', "w") as secondquery:
+        secondquery.write(json.dumps(result,indent=2, sort_keys=True, separators=(',', ': ')))
+  for i in result:
+      print i
+
+  query_string = 'exit_code:0 AND release:CMSSW_10_2_X_2018-04* AND architecture:slc6_amd64_gcc630'
+  st = 1000*int(time()-(86400*10))
+  et = 1000*int(time())
+
+  result = es_query(index='relvals_stats_*', query=query_string, start_time=st,end_time= et)
+  #for i in result:
+  #    print i
+  print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
+
+  query_string = 'release:/cmssw_10_2_x.*/ AND architecture:/slc7_amd64_gcc630.*/ '
+  result = es_krb_query(index='cmssdt-relvals_stats_summary*', query=query_string, start_time=st, end_time=et)
+  print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
