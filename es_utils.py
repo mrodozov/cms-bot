@@ -180,7 +180,7 @@ def es_krb_query(index,query,start_time,end_time,page_start=0,page_size=10000,ti
           "range": {
             "%(timestamp_field)s": {
               "gte": %(start_time)s,
-              "lt": %(end_time)s
+              "lt":%(end_time)s
             }
           }
         }
@@ -241,15 +241,14 @@ if __name__ == "__main__":
         {
           "range": {
             "@timestamp": {
-              "gte": "1522241504472",
-              "lt": "1522327904472"
+              "gte": "1522847085252"
             }
           }
         }
       ],
       "must": {
         "query_string": {
-          "query": "release:/cmssw_10_2_x.*/ AND architecture:/slc6_amd64_gcc630.*/ "
+          "query": "release:/cmssw_10_2_clang.*/ AND architecture:/slc6_amd64_gcc630.*/ "
         }
       }
     }
@@ -303,21 +302,21 @@ if __name__ == "__main__":
       }
       """
 
-  result = json.loads(get_payload(query_url, query_datsets))
-  with open('secondquery.json', "w") as secondquery:
-        secondquery.write(json.dumps(result,indent=2, sort_keys=True, separators=(',', ': ')))
-  for i in result:
-      print i
+  #result = json.loads(get_payload(query_url, query_datsets))
+  #with open('secondquery.json', "w") as secondquery:
+  #      secondquery.write(json.dumps(result,indent=2, sort_keys=True, separators=(',', ': ')))
+  #for i in result:
+  #    print i
 
-  query_string = 'exit_code:0 AND release:CMSSW_10_2_X_2018-04* AND architecture:slc6_amd64_gcc630'
+  query_string = 'exit_code:0 AND release:CMSSW_10_2_CLANG* AND architecture:slc6_amd64_gcc630'
   st = 1000*int(time()-(86400*10))
   et = 1000*int(time())
 
-  result = es_query(index='relvals_stats_*', query=query_string, start_time=st,end_time= et)
+  #result = es_query(index='relvals_stats_*', query=query_string, start_time=st,end_time= et)
   #for i in result:
   #    print i
-  print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
+  #print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
 
-  query_string = 'release:/cmssw_10_2_x.*/ AND architecture:/slc7_amd64_gcc630.*/ '
+  query_string = 'release:/cmssw_10_2_clang.*/ AND architecture:/slc6_amd64_gcc630.*/ '
   result = es_krb_query(index='cmssdt-relvals_stats_summary*', query=query_string, start_time=st, end_time=et)
   print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
