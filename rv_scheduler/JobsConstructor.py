@@ -19,7 +19,7 @@ CMS_BOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR,'..'))
 sys.path.insert(0,CMS_BOT_DIR)
 sys.path.insert(0,SCRIPT_DIR)
 
-from es_utils import get_payload_kerberos
+from es_utils import get_payload_kerberos_exe
 
 class JobsConstructor(object):
 
@@ -71,7 +71,7 @@ class JobsConstructor(object):
         """
         query = self._format(query, **queryInfo)
         #print query
-        es_data = get_payload_kerberos(query_url, query)
+        es_data = get_payload_kerberos_exe(query_url, query)
         #print es_data
         return es_data['hits']['hits']
         

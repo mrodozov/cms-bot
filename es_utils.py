@@ -4,7 +4,7 @@ from datetime import datetime
 from time import time
 from os.path import exists
 from os import getenv
-from requests_kerberos import HTTPKerberosAuth, REQUIRED
+#from requests_kerberos import HTTPKerberosAuth, REQUIRED
 #NOTE: requests_kerberos IS NOT !!! part of requests. It brings requests as requrement and not only
 #Function to store data in elasticsearch
 
@@ -152,6 +152,12 @@ def get_payload_kerberos(url, query):
   final_scroll_data = {'hits':final_scroll_data['hits'],'_shards':final_scroll_data['_shards'],'took':final_scroll_data['took'],'timed_out':final_scroll_data['timed_out']}
   return final_scroll_data
 
+def get_payload_kerberos_exe(url, query):
+  from commands import getstatusoutput as cmd
+  e, o = cmd("eval `scram unset -sh`; python ./get_pl_krb.py '%s' '%s' 2>&1 | grep JSON_OUT= | sed 's|.*JSON_OUT= *||'" % (url, query))
+  print e, o
+  return json.loads(o)
+
 def format(s, **kwds): return s % kwds
 
 def es_query(index,query,start_time,end_time,page_start=0,page_size=100000,timestamp_field="@timestamp",lowercase_expanded_terms='false', es_host='http://cmses-master02.cern.ch:9200'):
@@ -257,13 +263,14 @@ if __name__ == "__main__":
   "size": 10000
   }"""
 
-  result = get_payload_kerberos(query_url, query)
+  result = get_payload_kerberos_exe(query_url, query)
   with open('firstquery.json', "w") as firstquery:
         firstquery.write(json.dumps(result,indent=2, sort_keys=True, separators=(',', ': ')))
-  for i in result:
-      print i
+  exit(1)
+  #for i in result:
+  #    print i
   #print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
-
+  '''
   query_url= 'http://cmses-master02.cern.ch:9200/relvals_stats_*/_search'
   query_datsets = """
       {
@@ -301,16 +308,16 @@ if __name__ == "__main__":
         "size": 10000
       }
       """
-
+  '''
   #result = json.loads(get_payload(query_url, query_datsets))
   #with open('secondquery.json', "w") as secondquery:
   #      secondquery.write(json.dumps(result,indent=2, sort_keys=True, separators=(',', ': ')))
   #for i in result:
   #    print i
 
-  query_string = 'exit_code:0 AND release:CMSSW_10_2_CLANG* AND architecture:slc6_amd64_gcc630'
-  st = 1000*int(time()-(86400*10))
-  et = 1000*int(time())
+  #query_string = 'exit_code:0 AND release:CMSSW_10_2_CLANG* AND architecture:slc6_amd64_gcc630'
+  #st = 1000*int(time()-(86400*10))
+  #et = 1000*int(time())
 
   #result = es_query(index='relvals_stats_*', query=query_string, start_time=st,end_time= et)
   #for i in result:
