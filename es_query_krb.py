@@ -5,15 +5,37 @@ from os.path import exists
 from os import getenv
 from requests_kerberos import HTTPKerberosAuth, REQUIRED
 from get_pl_krb import get_payload_kerberos
-from get_pl_krb import query_datsets as query_t
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+query_tmpl = """{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "range": {
+            "%(timestamp_field)s": {
+              "gte": %(start_time)s,
+              "lt": %(end_time)s
+            }
+          }
+        }
+      ],
+      "must": {
+        "query_string": {
+          "query": "%(query)s"
+        }
+      }
+    }
+  },
+  "from": %(page_start)s,
+  "size": %(page_size)s
+  }"""
 
 def format(s, **kwds): return s % kwds
 
 def es_krb_query(index,query,start_time,end_time,page_start=0,page_size=10000,timestamp_field="@timestamp",lowercase_expanded_terms='false', es_host='https://es-cmssdt.cern.ch/krb'):
   query_url='%s/%s/_search?scroll=1m' % (es_host, index)
-  query_tmpl = query_t
   query_str = format(query_tmpl, query=query, start_time=start_time, end_time=end_time, page_start=page_start,
                      page_size=page_size, timestamp_field=timestamp_field, lowercase_expanded_terms=lowercase_expanded_terms)
   #print query_str
