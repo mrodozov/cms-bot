@@ -1,0 +1,26 @@
+import sys, urllib2, json, requests, urllib3
+from datetime import datetime
+from time import time
+from os.path import exists
+from os import getenv
+from requests_kerberos import HTTPKerberosAuth, REQUIRED
+from get_pl_krb import get_payload_kerberos
+from get_pl_krb import query_datsets as query_t
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def format(s, **kwds): return s % kwds
+
+def es_krb_query(index,query,start_time,end_time,page_start=0,page_size=10000,timestamp_field="@timestamp",lowercase_expanded_terms='false', es_host='https://es-cmssdt.cern.ch/krb'):
+  query_url='%s/%s/_search?scroll=1m' % (es_host, index)
+  query_tmpl = query_t
+  query_str = format(query_tmpl, query=query, start_time=start_time, end_time=end_time, page_start=page_start,
+                     page_size=page_size, timestamp_field=timestamp_field, lowercase_expanded_terms=lowercase_expanded_terms)
+  #print query_str
+  return get_payload_kerberos(query_url, query_str)
+
+if __name__ == "__main__":
+
+  #print sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
+  result = es_krb_query(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4])
+  print "JSON_OUT="+json.dumps(result)
