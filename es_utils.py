@@ -2,7 +2,7 @@
 import sys, urllib2, json
 from datetime import datetime
 from time import time
-from os.path import exists
+from os.path import exists, join as path_join
 from os import getenv
 
 def resend_payload(hit, passwd_file="/data/secrets/github_hook_secret_cmsbot"):
@@ -96,17 +96,17 @@ def get_payload(url,query):
     print "Couldn't send data to elastic search" , str(e)
     return ""
 
-def get_payload_kerberos_exe(url, query):
+def get_payload_kerberos_exe(url, query, script_folder):
   from commands import getstatusoutput as cmd
-  folder_prefix = '.'
-  e, o = cmd("eval `scram unset -sh`; python '%s'/get_pl_krb.py '%s' '%s' 2>&1 | grep JSON_OUT= | sed 's|.*JSON_OUT= *||'" % (folder_prefix, url, query))
+  script_path = path_join(script_folder,'get_pl_krb.py')
+  e, o = cmd("eval `scram unset -sh`; python '%s' '%s' '%s' 2>&1 | grep JSON_OUT= | sed 's|.*JSON_OUT= *||'" % (script_path,url, query))
   #print e, o
   return json.loads(o)
 
-def es_krb_query_exe(index,query,start_time,end_time,page_start=0,page_size=10000,timestamp_field="@timestamp",lowercase_expanded_terms='false', es_host='https://es-cmssdt.cern.ch/krb'):
+def es_krb_query_exe(index,query,start_time,end_time,script_folder,page_start=0,page_size=10000,timestamp_field="@timestamp",lowercase_expanded_terms='false', es_host='https://es-cmssdt.cern.ch/krb'):
   from commands import getstatusoutput as cmd
-  #folder_prefix = '.'
-  e, o = cmd("eval `scram unset -sh`; python ./es_query_krb.py '%s' '%s' '%s' '%s' 2>&1 | grep JSON_OUT= | sed 's|.*JSON_OUT= *||'" % (index, query,start_time,end_time))
+  script_path = path_join(script_folder,'es_query_krb.py')
+  e, o = cmd("eval `scram unset -sh`; python '%s' '%s' '%s' '%s' '%s' 2>&1 | grep JSON_OUT= | sed 's|.*JSON_OUT= *||'" % (script_path, index, query,start_time,end_time))
   #print e, o
   return json.loads(o)
 
@@ -164,5 +164,5 @@ if __name__ == "__main__":
   st = 1000*int(time()-(86400*10))
   et = 1000*int(time())
   query_string = 'release:/cmssw_10_2_clang.*/ AND architecture:/slc6_amd64_gcc630.*/ '
-  result = es_krb_query_exe(index='cmssdt-relvals_stats_summary*', query=query_string, start_time=st, end_time=et)
+  result = es_krb_query_exe(index='cmssdt-relvals_stats_summary*', query=query_string, start_time=st, end_time=et,script_folder='.')
   print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))

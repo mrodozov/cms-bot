@@ -39,7 +39,7 @@ if __name__ == "__main__":
                 opts.arch = "slc6_amd64_gcc630"
             else:
                 opts.arch = out
-    if opts.release != "*": opts.release = opts.release + "*"
+    #if opts.release != "*": opts.release = opts.release + "*"
 
     ''' gets the CL arguments '''
 

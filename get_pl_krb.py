@@ -62,5 +62,3 @@ if __name__ == "__main__":
   
   result = get_payload_kerberos(sys.argv[1],sys.argv[2])
   print "JSON_OUT="+json.dumps(result)
-  #with open('josnresult.json', 'w') as resfile:
-  #  resultfile.write(json.dumps(result))
