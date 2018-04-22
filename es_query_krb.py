@@ -29,7 +29,7 @@ query_tmpl = """{
     }
   },
   "from": %(page_start)s,
-  "size": %(page_size)s
+  "size": 10000
   }"""
 
 def format(s, **kwds): return s % kwds

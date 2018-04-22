@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, sys, glob, re
+import os, sys, glob, re, json
 from commands import getstatusoutput
 from multiprocessing import cpu_count
 from time import sleep, time
@@ -11,7 +11,7 @@ CMS_BOT_DIR = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0,CMS_BOT_DIR)
 sys.path.insert(0,SCRIPT_DIR)
 from RelValArgs import GetMatrixOptions, FixWFArgs
-from es_utils import es_query, format, es_workflow_stats, es_krb_query_exe
+from es_utils import es_krb_query_exe, format, es_workflow_stats
 
 def createJob(workflow, cmssw_ver, arch):
   workflow_args = FixWFArgs(cmssw_ver, arch, workflow, GetMatrixOptions(cmssw_ver, arch))
@@ -51,26 +51,20 @@ for t in thrds: t.join()
 #Get Workflow stats from ES
 print "Getting Workflow stats from ES....."
 stats = {}
-release_cycle=cmssw_ver.split("_X_")[0]+"_X"
-
-print release_cycle
-#exit(0)
-
+release_cycle=(cmssw_ver.split("_X_")[0]+"_X").lower()
 st = 1000*int(time()-(86400*10))
 et = 1000*int(time())
-#query_string = 'release:/cmssw_10_2_clang.*/ AND architecture:/slc6_amd64_gcc630.*/ '
-result = es_krb_query_exe(index='cmssdt-relvals_stats_summary*', query=query_string, start_time=st, end_time=et)
-#print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
+es_q = format('exit_code:0 AND release:/%(release_cycle)s.*/ AND architecture:/%(architecture)s.*/ AND (%(workflows)s)', release_cycle=release_cycle, architecture=arch, workflows=wf_query[4:])
+print es_q, CMS_BOT_DIR, st, et, release_cycle
+#exit(0)
 
 while True:
-  stats = es_query(index='relvals_stats_*',
-                 query=format('exit_code:0 AND release:%(release_cycle)s AND architecture:%(architecture)s AND (%(workflows)s)',
-                              release_cycle=release_cycle+"_*",
-                              architecture=arch,
-                              workflows=wf_query[4:]
-                             ),
-                 start_time=1000*int(time()-(86400*10)),
-                 end_time=1000*int(time()))
+  
+  stats = es_krb_query_exe(index='cmssdt-relvals_stats_summary*', query=es_q, start_time=st, end_time=et, script_folder=CMS_BOT_DIR)
+  file_to_write = release_cycle+'.json'  
+  with open(file_to_write, 'w') as ftr:
+    ftr.write(json.dumps(stats,indent=2, sort_keys=True, separators=(',', ': ')))
+  
   if (not 'hits' in stats) or (not 'hits' in stats['hits']) or (not stats['hits']['hits']):
     xrelease_cycle = "_".join(cmssw_ver.split("_",4)[0:3])+"_X"
     if xrelease_cycle!=release_cycle:
