@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import requests, json
-from requests_kerberos import HTTPKerberosAuth, REQUIRED
+from requests_kerberos import HTTPKerberosAuth, DISABLED
 
 #urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -33,7 +33,7 @@ def get_payload_kerberos(url, query):
   #krb = KerberosTicket("HTTP@"+short_url)
   #headers = {"Authorization": krb.auth_header}
   #r = requests.post(url, headers=headers, verify=False, data=query)
-  kerb_auth = HTTPKerberosAuth(mutual_authentication=REQUIRED)
+  kerb_auth = HTTPKerberosAuth(mutual_authentication=DISABLED)
   r = requests.post(url, auth=kerb_auth, verify=False, data=query)
   es_data = json.loads(r.text)
   #print es_data
