@@ -1,12 +1,4 @@
-import sys, urllib2, json, requests, urllib3
-from datetime import datetime
-from time import time
-from os.path import exists
-from os import getenv
-from requests_kerberos import HTTPKerberosAuth, REQUIRED
 from get_pl_krb import get_payload_kerberos
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 query_tmpl = """{
   "query": {
@@ -42,7 +34,7 @@ def es_krb_query(index,query,start_time,end_time,page_start=0,page_size=10000,ti
   return get_payload_kerberos(query_url, query_str)
 
 if __name__ == "__main__":
-
+  import sys, json
   #print sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
   result = es_krb_query(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4])
   print "JSON_OUT="+json.dumps(result)

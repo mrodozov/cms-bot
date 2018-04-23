@@ -55,16 +55,12 @@ release_cycle=(cmssw_ver.split("_X_")[0]+"_X").lower()
 st = 1000*int(time()-(86400*10))
 et = 1000*int(time())
 es_q = format('exit_code:0 AND release:/%(release_cycle)s.*/ AND architecture:/%(architecture)s.*/ AND (%(workflows)s)', release_cycle=release_cycle, architecture=arch, workflows=wf_query[4:])
-print es_q, CMS_BOT_DIR, st, et, release_cycle
-#exit(0)
+#print es_q, CMS_BOT_DIR, st, et, release_cycle
 
 while True:
   
-  stats = es_krb_query_exe(index='cmssdt-relvals_stats_summary*', query=es_q, start_time=st, end_time=et, script_folder=CMS_BOT_DIR)
-  file_to_write = release_cycle+'.json'  
-  with open(file_to_write, 'w') as ftr:
-    ftr.write(json.dumps(stats,indent=2, sort_keys=True, separators=(',', ': ')))
-  
+  stats = es_krb_query_exe(index='cmssdt-relvals_stats_summary*', query=es_q, start_time=st, end_time=et)
+
   if (not 'hits' in stats) or (not 'hits' in stats['hits']) or (not stats['hits']['hits']):
     xrelease_cycle = "_".join(cmssw_ver.split("_",4)[0:3])+"_X"
     if xrelease_cycle!=release_cycle:

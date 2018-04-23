@@ -74,7 +74,7 @@ class JobsConstructor(object):
         #with open('query_.json','w') as fknfile:
         #    fknfile.write(json.dumps(query, indent=2, sort_keys=True, separators=(',', ': ')))
         #exit(0)
-        es_data = get_payload_kerberos_exe(query_url, query, CMS_BOT_DIR)
+        es_data = get_payload_kerberos_exe(query_url, query)
         with open('maykati.json','w') as fknfile:
             fknfile.write(json.dumps(es_data, indent=2, sort_keys=True, separators=(',', ': ')))
         #exit(0)

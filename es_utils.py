@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 import sys, urllib2, json
 from datetime import datetime
-from time import time
-from os.path import exists, join as path_join
+from os.path import exists, join as path_join, dirname, abspath
 from os import getenv
 
 def resend_payload(hit, passwd_file="/data/secrets/github_hook_secret_cmsbot"):
@@ -96,16 +95,16 @@ def get_payload(url,query):
     print "Couldn't send data to elastic search" , str(e)
     return ""
 
-def get_payload_kerberos_exe(url, query, script_folder):
+def get_payload_kerberos_exe(url, query):
   from commands import getstatusoutput as cmd
-  script_path = path_join(script_folder,'get_pl_krb.py')
+  script_path = path_join(dirname(abspath(__file__)),'get_pl_krb.py')
   e, o = cmd("eval `scram unset -sh`; python '%s' '%s' '%s' 2>&1 | grep JSON_OUT= | sed 's|.*JSON_OUT= *||'" % (script_path,url, query))
   #print e, o
   return json.loads(o)
 
-def es_krb_query_exe(index, query, start_time, end_time, script_folder, page_start=0, page_size=10000, timestamp_field="@timestamp",lowercase_expanded_terms='false', es_host='https://es-cmssdt.cern.ch/krb'):
+def es_krb_query_exe(index, query, start_time, end_time, page_start=0, page_size=10000, timestamp_field="@timestamp",lowercase_expanded_terms='false', es_host='https://es-cmssdt.cern.ch/krb'):
   from commands import getstatusoutput as cmd
-  script_path = path_join(script_folder,'es_query_krb.py')
+  script_path = path_join(dirname(abspath(__file__)),'es_query_krb.py')
   e, o = cmd("eval `scram unset -sh`; python '%s' '%s' '%s' '%s' '%s' 2>&1 | grep JSON_OUT= | sed 's|.*JSON_OUT= *||'" % (script_path, index, query,start_time,end_time))
   #print e, o
   return json.loads(o)
@@ -161,9 +160,11 @@ def es_workflow_stats(es_hits,rss='rss_75', cpu='cpu_75'):
 
 if __name__ == "__main__":
 
+  from time import time
+
   st = 1000*int(time()-(86400*10))
   et = 1000*int(time())
   #query_string = 'release:/cmssw_10_2_clang.*/ AND architecture:/slc6_amd64_gcc630.*/ '
   query_string = 'exit_code:0 AND release:/cmssw_10_2_devel_x.*/ AND architecture:/slc6_amd64_gcc630.*/ AND (workflow:134.813 OR workflow:5.3)'
-  result = es_krb_query_exe(index='cmssdt-relvals_stats_summary*', query=query_string, start_time=st, end_time=et,script_folder='.')
+  result = es_krb_query_exe(index='cmssdt-relvals_stats_summary*', query=query_string, start_time=st, end_time=et)
   print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))

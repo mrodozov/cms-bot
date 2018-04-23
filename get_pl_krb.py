@@ -1,12 +1,8 @@
 #!/usr/bin/env python
-import sys, urllib2, json, requests, urllib3
-from datetime import datetime
-from time import time
-from os.path import exists
-from os import getenv
+import requests, json
 from requests_kerberos import HTTPKerberosAuth, REQUIRED
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+#urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class KerberosTicket:
   def __init__(self, service):
@@ -60,5 +56,6 @@ def get_payload_kerberos(url, query):
 
 if __name__ == "__main__":
   
+  import sys
   result = get_payload_kerberos(sys.argv[1],sys.argv[2])
   print "JSON_OUT="+json.dumps(result)
