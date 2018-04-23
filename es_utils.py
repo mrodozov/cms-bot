@@ -158,13 +158,3 @@ def es_workflow_stats(es_hits,rss='rss_75', cpu='cpu_75'):
                            }
   return wf_stats
 
-if __name__ == "__main__":
-
-  from time import time
-
-  st = 1000*int(time()-(86400*10))
-  et = 1000*int(time())
-  #query_string = 'release:/cmssw_10_2_clang.*/ AND architecture:/slc6_amd64_gcc630.*/ '
-  query_string = 'exit_code:0 AND release:/cmssw_10_2_devel_x.*/ AND architecture:/slc6_amd64_gcc630.*/ AND (workflow:134.813 OR workflow:5.3)'
-  result = es_krb_query_exe(index='cmssdt-relvals_stats_summary*', query=query_string, start_time=st, end_time=et)
-  print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))

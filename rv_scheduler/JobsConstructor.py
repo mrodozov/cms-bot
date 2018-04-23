@@ -70,14 +70,7 @@ class JobsConstructor(object):
         }
         """
         query = self._format(query, **queryInfo)
-        #print query
-        #with open('query_.json','w') as fknfile:
-        #    fknfile.write(json.dumps(query, indent=2, sort_keys=True, separators=(',', ': ')))
-        #exit(0)
         es_data = get_payload_kerberos_exe(query_url, query)
-        with open('maykati.json','w') as fknfile:
-            fknfile.write(json.dumps(es_data, indent=2, sort_keys=True, separators=(',', ': ')))
-        #exit(0)
         return es_data['hits']['hits']
         
     def getJobsCommands(self, workflow_matrix_list=None,workflows_limit=None, workflows_dir=os.environ["CMSSW_BASE"]+"/pyRelval/"):
