@@ -35,7 +35,7 @@ def get_payload_kerberos(url, query):
   #r = requests.post(url, headers=headers, verify=False, data=query)
   kerb_auth = HTTPKerberosAuth(mutual_authentication=DISABLED)
   r = requests.post(url, auth=kerb_auth, verify=False, data=query)
-  print r.text
+  #print r.text
   es_data = json.loads(r.text)
   #print es_data
   scroll_url = 'https://es-cmssdt.cern.ch/krb/_search/scroll'
