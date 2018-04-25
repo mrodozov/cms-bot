@@ -35,6 +35,7 @@ def get_payload_kerberos(url, query):
   #r = requests.post(url, headers=headers, verify=False, data=query)
   kerb_auth = HTTPKerberosAuth(mutual_authentication=DISABLED)
   r = requests.post(url, auth=kerb_auth, verify=False, data=query)
+  print r.text
   es_data = json.loads(r.text)
   #print es_data
   scroll_url = 'https://es-cmssdt.cern.ch/krb/_search/scroll'
@@ -56,6 +57,35 @@ def get_payload_kerberos(url, query):
 
 if __name__ == "__main__":
   
+  query_url = 'https://es-cmssdt.cern.ch/krb/cmssdt-relvals_stats_summary*/_search?scroll=1m'
+  millisecday=86400*1000
+  st = int(time()*1000)-(millisecday*7)
+  st = str(st)
+  query= """{
+        "query": {
+        "bool": {
+          "filter": [
+            {
+              "range": {
+                "@timestamp": {
+                  "gte": '"""+st +"""'
+                }
+              }
+            }
+          ],
+          "must": {
+            "query_string": {
+              "query": "release:/cmssw_10_2_clang_x.*/ AND architecture:/slc6_amd64_gcc630.*/ "
+            }
+          }
+        }
+        },
+        "from": 0,
+        "size": 10000
+        }
+        """
+  
+
   import sys
-  result = get_payload_kerberos(sys.argv[1],sys.argv[2])
+  result = get_payload_kerberos(query_url,query)
   print "JSON_OUT="+json.dumps(result)
