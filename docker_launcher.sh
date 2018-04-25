@@ -30,6 +30,7 @@ if [ "X$DOCKER_IMG" != X -a "X$RUN_NATIVE" = "X" ]; then
     -e WORKSPACE=$WORKSPACE \
     -e USER=$USER \
     -e BUILD_NUMBER=$BUILD_NUMBER \
+    -e KRB5CCNAME=$KRB5CCNAME \
     -e JOB_NAME=$JOB_NAME \
     $DOCKER_IMG sh -c "$DOCK_ARGS"
 else
