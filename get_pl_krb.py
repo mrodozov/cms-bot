@@ -56,7 +56,8 @@ def get_payload_kerberos(url, query):
   return final_scroll_data
 
 if __name__ == "__main__":
-  
+
+  '''
   query_url = 'https://es-cmssdt.cern.ch/krb/cmssdt-relvals_stats_summary*/_search?scroll=1m'
   millisecday=86400*1000
   st = int(time()*1000)-(millisecday*7)
@@ -84,8 +85,8 @@ if __name__ == "__main__":
         "size": 10000
         }
         """
-  
+  '''
 
   import sys
-  result = get_payload_kerberos(query_url,query)
+  result = get_payload_kerberos(sys.argv[1],sys.argv[2])
   print "JSON_OUT="+json.dumps(result)
