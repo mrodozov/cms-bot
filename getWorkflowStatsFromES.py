@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 import json, sys, urllib3
 from time import time
-from datetime import datetime
-from get_pl_krb import get_payload_kerberos
+from es_query_krb import es_krb_query
 #from ROOT import *
 
 '''
@@ -14,43 +13,20 @@ def _format(s, **kwds):
 
 def getWorkflowStatsFromES(release='*', arch='*', lastNdays=7, page_size=0):
 
-    query_url = 'https://es-cmssdt.cern.ch/krb/cmssdt-relvals_stats_summary*/_search?scroll=1m'
-
     queryInfo = {}
     millisecday=86400*1000
-    queryInfo["end_time"] = int(time()*1000)-(millisecday*7)
-    queryInfo["start_time"] = queryInfo["end_time"] - int(millisecday * lastNdays)
+
     queryInfo["architecture"] = arch.lower()
     queryInfo["release_cycle"] = release.lower()
     queryInfo["from"] = 0
     queryInfo["page_size"] = 10000 #default
 
-    query= """{
-      "query": {
-        "bool": {
-          "filter": [
-            {
-              "range": {
-                "@timestamp": {
-                  "gte": "%(start_time)s",
-                  "lt": "%(end_time)s"
-                }
-              }
-            }
-          ],
-          "must": {
-            "query_string": {
-              "query": "release:/%(release_cycle)s.*/ AND architecture:/%(architecture)s.*/ "
-            }
-          }
-        }
-      },
-      "from": 0,
-      "size": 10000
-      }
-    """
+    query = "release:/%(release_cycle)s.*/ AND architecture:/%(architecture)s.*/ "
     query = _format(query, **queryInfo)
-    es_data = get_payload_kerberos(query_url, query)
+    st = 1000 * int(time() - (86400 * lastNdays))
+    et = 1000 * int(time())
+    es_data = es_krb_query(index='cmssdt-relvals_stats_summary*', query=query, start_time=st, end_time=et)
+
     return es_data['hits']['hits']
 
 '''

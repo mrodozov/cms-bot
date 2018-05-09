@@ -7,8 +7,7 @@ query_tmpl = """{
         {
           "range": {
             "%(timestamp_field)s": {
-              "gte": %(start_time)s,
-              "lt": %(end_time)s
+              "gte": %(start_time)s
             }
           }
         }
