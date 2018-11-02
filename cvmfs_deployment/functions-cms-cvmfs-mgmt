@@ -5428,4 +5428,4 @@ function check_and_update_siteconf () {
 # if server (cron_install_cmssw.sh), work with a particular scram_arch -> rsync ( create soft link for set up files in cmssoft_rsync_slc6.sh ) -> publish
 ##30    3       *       *       *       cp -r /scratch/shared/* /home/shared/data/
 ##18 * * * * /home/shared/siteconf/cvmfs_check_siteconf.sh > /home/shared/siteconf/cvmfs_check_siteconf.log 2>&1
-16 * * * * $HOME/cron_install_cmssw.sh > $HOME/cron_install_cmssw.log 2>&1
+#16 * * * * $HOME/cron_install_cmssw.sh > $HOME/cron_install_cmssw.log 2>&1
