@@ -7,7 +7,7 @@ dockerrun()
       ;;
     slc7_amd64_* )
       ARGS="cd ${INSTALL_PATH}; $@"
-      docker run --net=host --rm -t -v /etc/passwd:/etc/passwd -v /etc/group:/etc/group -e -e INSTALL_PATH=${INSTALL_PATH} -e SCRAM_ARCH=${SCRAM_ARCH} -e x=${x} -v /tmp:/tmp -v ${INSTALL_PATH}:${INSTALL_PATH} -u $(whoami) cmssw/slc7-installer:latest sh -c "${ARGS}"
+      docker run --net=host --rm -t -v /etc/passwd:/etc/passwd -v /etc/group:/etc/group -e INSTALL_PATH=${INSTALL_PATH} -e SCRAM_ARCH=${SCRAM_ARCH} -e x=${x} -v /tmp:/tmp -v ${INSTALL_PATH}:${INSTALL_PATH} -u $(whoami) cmssw/slc7-installer:latest sh -c "${ARGS}"
       ;;
     slc7_aarch64_* )
       ARGS="export INSTALL_PATH=${INSTALL_PATH}; export INSTALL_PATH=${INSTALL_PATH}; export SCRAM_ARCH=${SCRAM_ARCH}; export x=${x}; cd ${INSTALL_PATH}; $@"
