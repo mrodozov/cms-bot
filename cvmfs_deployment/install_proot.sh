@@ -1,3 +1,5 @@
+#!/bin/bash -ex
+
 PROOT_URL="https://cmssdt.cern.ch/SDT/proot/"
 PROOTDIR="${INSTALL_PATH}/proot"
 if [[ ! -d $PROOTDIR ]] ; then

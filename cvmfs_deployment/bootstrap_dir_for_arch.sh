@@ -2,6 +2,7 @@
 
 INSTALL_PATH=$1
 ARCHITECTURE=$2
+PROOT_DIR=$3
 
 #  docker run doesnt exist inside the script.
 
