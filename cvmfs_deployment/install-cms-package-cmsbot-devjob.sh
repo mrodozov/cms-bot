@@ -1,32 +1,22 @@
 #!/bin/bash -ex
 
-INSTALL_PATH=$WORKSPACE/${INSTALL_PATH}${RPMS_REPO}
+#  vars set because some functions are using them
+INSTALL_PATH=$1
+ARCHITECTURE=$2
+RPMS_REPO=$3
+PACKAGE_NAME=$4
 
-if [[ ! -d  $INSTALL_PATH ]]; then
-    mkdir -p $INSTALL_PATH
-fi
+SCRAM_ARCH=$ARCHITECTURE #  for dockerrun function
+PROOT_DIR="${INSTALL_PATH}/proot"  #  or prefixed on cvmfs, doesn't matter
 
-#  build in place the cms package in $INSTALL_PATH
-cd $INSTALL_PATH
-
-#  vars set because some functions are 
-SCRAM_ARCH=$ARCHITECTURE
-PROOT_DIR="${INSTALL_PATH}/proot"
-
-#  function from https://github.com/cms-sw/cms-bot/blob/master/cvmfsInstall.sh#L115 
-#  to execute either docker OR proot. See what is proot below
-
-rm -rf $INSTALL_PATH/cms-bot # if the old bot is still there
-git clone https://github.com/mrodozov/cms-bot -b cvmfs_deployment # use the master later
 #  get dockerrun function
+
+cd $INSTALL_PATH
 source cms-bot/cvmfs_deployment/docker_proot_function.sh
 #  proot have to exist, so setup it first if it doesn't. proot is a program if you wonder again what is this thing
 sh -ex cms-bot/cvmfs_deployment/install_proot.sh
-
-cd $INSTALL_PATH
-
 #  check bootstrap
-sh -ex cms-bot/cvmfs_deployment/bootstrap_dir_for_arch.sh $INSTALL_PATH $ARCHITECTURE $PROOT_DIR
+sh -ex cms-bot/cvmfs_deployment/bootstrap_dir_for_arch.sh $INSTALL_PATH $ARCHITECTURE $PROOT_DIR $RPMS_REPO
 
 #  check how many packages are available
 number_of_matches=$(dockerrun "${INSTALL_PATH}/common/cmspkg -a ${ARCHITECTURE} search ${PACKAGE_NAME} | sed -e 's|[ ].*||' | grep -e \"^${PACKAGE_NAME}\$\" | wc -l" | tr -dc '0-9' )

@@ -4,6 +4,7 @@
 INSTALL_PATH=$1
 ARCHITECTURE=$2
 PROOT_DIR=$3
+RPMS_REPO=$4
 
 #  docker run doesnt exist inside the script. source it
 
