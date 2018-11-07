@@ -1,5 +1,6 @@
 dockerrun()
 {
+  SCRAM_ARCH=$ARCHITECTURE
   case $SCRAM_ARCH in
     slc6_amd64_* )
       ARGS="cd ${INSTALL_PATH}; $@"
