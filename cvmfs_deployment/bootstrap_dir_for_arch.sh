@@ -1,10 +1,11 @@
-#  bootstrap - check if it exists and install if doesn't exist
+#!/bin/bash -ex
+#  bootstrap - check if it exists and install if doesn't
 
 INSTALL_PATH=$1
 ARCHITECTURE=$2
 PROOT_DIR=$3
 
-#  docker run doesnt exist inside the script.
+#  docker run doesnt exist inside the script. source it
 
 source ${INSTALL_PATH}/cms-bot/cvmfs_deployment/docker_proot_function.sh
 
