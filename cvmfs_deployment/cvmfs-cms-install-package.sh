@@ -18,12 +18,12 @@ if [ ! -d $INSTALL_PATH ] ; then
 fi
 
 SCRAM_ARCH=$ARCHITECTURE #  for dockerrun function
-#  PROOT_DIR="${INSTALL_PATH}/proot"  #  or prefixed on cvmfs, doesn't matter
-
-#  get dockerrun function
+#  PROOT_DIR= jenkins machine variable
+#  CMS_BOT_DIR= jenkins machine variable, repo on cvmfs
 
 #  proot have to exist, so setup it first if it doesn't. proot is a program if you wonder again what is this thing
 ${CMS_BOT_DIR}/cvmfs_deployment/install_proot.sh
+#  get dockerrun function
 source ${CMS_BOT_DIR}/cvmfs_deployment/docker_proot_function.sh
 
 #  check bootstrap
