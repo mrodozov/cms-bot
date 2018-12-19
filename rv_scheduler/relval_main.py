@@ -7,10 +7,13 @@ from JobsProcessor import JobsProcessor
 from threading import Event
 import Queue
 from optparse import OptionParser
-import psutil
+import json
 from multiprocessing import cpu_count
+from CustomFunctions import relval_test_process, process_relval_workflow_step
+
 import os
 import sys
+
 
 from cmssw_known_errors import get_known_errors
 
@@ -26,10 +29,12 @@ if __name__ == "__main__":
     parser.add_option("-p", "--page", dest="page_size",
                       help="Page size, default 0 means no page and get all data in one go", type=int, default=0)
     opts, args = parser.parse_args()
-
+    opts.release = "CMSSW_10_4_CLANG"
+    opts.arch = "slc7_amd64_gcc700"
+    '''
     if not opts.arch:
-        if opts.release == "*":
-            opts.arch = "*"
+        if opts.release == "CMSSW_10_4_X":
+            opts.arch = "slc7_amd64_gcc700"
         else:
             script_path = abspath(dirname(argv[0]))
             err, out = getstatusoutput(
@@ -39,11 +44,10 @@ if __name__ == "__main__":
                 opts.arch = "slc6_amd64_gcc630"
             else:
                 opts.arch = out
-
+    '''
     ''' gets the CL arguments '''
 
-    #print opts.release, opts.arch, opts.days
-    #exit(0)
+    print opts.release, opts.arch, opts.days
 
     #opts.release = 'CMSSW_9_3_X*'
     #opts.arch = 'slc6_amd64_gcc630'
@@ -57,8 +61,8 @@ if __name__ == "__main__":
 
     ''' here the program is tested  '''
 
-    avg_mem = 0.90*psutil.virtual_memory()[0]
-    avg_cpu = 200*cpu_count()
+    #avg_mem = 0.90*psutil.virtual_memory()[0]
+    #avg_cpu = 200*cpu_count()
     wf_limit = 1000
 
     #print psutil.virtual_memory()[]
@@ -74,10 +78,14 @@ if __name__ == "__main__":
     #print known_errors
     
     jc = JobsConstructor(None, known_errors)
-    matrixMap =jc.constructJobsMatrix(opts.release, opts.arch, opts.days, opts.page_size, wf_list, wf_limit,os.environ["CMSSW_BASE"]+"/pyRelval/")
+    matrixMap =jc.constructJobsMatrix(opts.release, opts.arch, opts.days, opts.page_size, wf_list, wf_limit, "/Users/mrodozov/Projects/cms-bot/steps")
+    result = jc.getWorkflowStatsFromES(release=opts.release, arch=opts.arch, lastNdays=7, page_size=10000)
+    print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
 
     ''' up to here it constructs the jobs stats'''
-    
+
+    exit(0)
+
     jm = JobsManager(matrixMap)
     jm.toProcessQueue = toProcessQueue
     jm.processedQueue = processedTasksQueue
@@ -90,6 +98,8 @@ if __name__ == "__main__":
 
     jm.getNextJobsEvent = getNextJobsEvent
     jm.finishJobsEvent = finishJobsEvent
+
+    jm.job_process_function = relval_test_process
 
     jm.putJobsOnProcessQueue.start()
     jp.start()

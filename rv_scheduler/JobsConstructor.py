@@ -19,7 +19,7 @@ CMS_BOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR,'..'))
 sys.path.insert(0,CMS_BOT_DIR)
 sys.path.insert(0,SCRIPT_DIR)
 
-from es_utils import get_payload, es_query
+from es_utils import get_payload, es_query, format
 
 class JobsConstructor(object):
 
@@ -43,7 +43,8 @@ class JobsConstructor(object):
                  end_time=1000*int(time()))
         return stats['hits']['hits']
         
-    def getJobsCommands(self, workflow_matrix_list=None,workflows_limit=None, workflows_dir=os.environ["CMSSW_BASE"]+"/pyRelval/"):
+    def getJobsCommands(self, workflow_matrix_list=None,workflows_limit=None, workflows_dir="/Users/mrodozov/Projects/cms-bot/steps"): #os.environ["CMSSW_BASE"]+"/pyRelval/"
+
         #run runTheMatrix and parse the output for each workflow, example results structure in resources/wf.json
         #for now, get it from the file resources/wf.json
         #run_matrix_process = subprocess.Popen('voms-proxy-init;runTheMatrix.py -l '+workflow_matrix_list+' -i all --maxSteps=0 -j 20',
@@ -126,13 +127,18 @@ class JobsConstructor(object):
 
 if __name__ == "__main__":
 
+
+    # fix ES queries
+
     opts = None
-    release = 'CMSSW_10_2_CLANG'
-    arch = 'slc6_amd64_gcc630'
+    release = 'CMSSW_10_4_X'
+    arch = 'slc7_amd64_gcc700'
     days = 7
     page_size = 0
     jk = JobsConstructor()
-    
+
+    matrix_map = jk.getJobsCommands()
+    #print json.dumps(matrix_map, indent=2, sort_keys=True, separators=(',', ': '))
     result = jk.getWorkflowStatsFromES(release=release, arch=arch, lastNdays=7, page_size=10000)
     print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
     
