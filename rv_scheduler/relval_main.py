@@ -10,6 +10,7 @@ from optparse import OptionParser
 import json
 from multiprocessing import cpu_count
 from CustomFunctions import relval_test_process, process_relval_workflow_step
+import psutil
 
 import os
 import sys
@@ -41,7 +42,7 @@ if __name__ == "__main__":
                 "grep 'RELEASE_QUEUE=%s;' %s/config.map | grep -v 'DISABLED=1;' | grep 'PROD_ARCH=1;' | tr ';' '\n' | grep 'SCRAM_ARCH=' | sed 's|.*=||'" % (
                 opts.release, script_path))
             if err:
-                opts.arch = "slc6_amd64_gcc630"
+                opts.arch = "slc7_amd64_gcc700"
             else:
                 opts.arch = out
     '''
@@ -53,16 +54,16 @@ if __name__ == "__main__":
     #opts.arch = 'slc6_amd64_gcc630'
     #opts.days = 7
     opts.page_size = 0
-    wf_list = None
+    wf_list = argv[1]
 
     #with open('resources/wf_slc6_530_1of5.txt') as wf_list_file:
-    #    wf_list = wf_list_file.read().replace('\n', ',')
-    #    wf_list = wf_list[:-1]
+        #wf_list = wf_list_file.read().replace('\n', ',')
+        #wf_list = wf_list[:-1]
 
     ''' here the program is tested  '''
 
-    #avg_mem = 0.90*psutil.virtual_memory()[0]
-    #avg_cpu = 200*cpu_count()
+    avg_mem = 0.90*psutil.virtual_memory()[0]
+    avg_cpu = 200*cpu_count()
     wf_limit = 1000
 
     #print psutil.virtual_memory()[]
@@ -80,11 +81,13 @@ if __name__ == "__main__":
     jc = JobsConstructor(None, known_errors)
     matrixMap =jc.constructJobsMatrix(opts.release, opts.arch, opts.days, opts.page_size, wf_list, wf_limit, "/Users/mrodozov/Projects/cms-bot/steps")
     result = jc.getWorkflowStatsFromES(release=opts.release, arch=opts.arch, lastNdays=7, page_size=10000)
-    print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
+    #print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
+
+    print matrixMap
 
     ''' up to here it constructs the jobs stats'''
 
-    exit(0)
+    #exit(0)
 
     jm = JobsManager(matrixMap)
     jm.toProcessQueue = toProcessQueue

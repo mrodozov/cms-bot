@@ -33,7 +33,7 @@ def relval_test_process(job=None):
             break
 
     # have some delay for the test
-    sleep(2)
+    sleep(0.2)
 
     endTime = int(time.time())
 
@@ -152,7 +152,7 @@ callbacks to be hooked
 def worklowIsStartingFunc(caller_obj, job_obj):
     workflowID = job_obj[0]
     wf_base_folder = caller_obj.jobs_result_folders[workflowID]
-
+    return
     print 'print from wf is starting'
     wfs_base = wf_base_folder.rsplit('/', 1)[0]
     print workflowID, wf_base_folder, wfs_base
@@ -186,10 +186,10 @@ def worklowIsStartingFunc(caller_obj, job_obj):
 
 
 def finilazeWorkflow(caller_obj, job_obj):
-    workflowID = job_obj[0]
+    workflowID = job_obj['id']
     wf_base_folder = caller_obj.jobs_result_folders[workflowID]
     job_results = caller_obj.jobs_result_folders[workflowID]
-
+    return
     print 'wf duration (all steps): ', getWorkflowDuration(wf_base_folder)
     print workflowID, wf_base_folder, job_results
     # writeWorkflowLog(wf_base_folder, job_results) #finishing function will fix this
@@ -239,8 +239,9 @@ def stepIsStartingFunc(caller_obj, job_obj):
 
 
 def stepIsFinishingFunc(caller_obj, job_obj):
-    workflowID = job_obj[0]
-    workflowStep = job_obj[1]
+    print 'jobs details', job_obj
+    workflowID = job_obj['id']
+    workflowStep = job_obj['step']
     wf_base_folder = caller_obj.jobs_result_folders[workflowID]
     print workflowID, workflowStep, wf_base_folder
     wfs_base = wf_base_folder.rsplit('/', 1)[0]

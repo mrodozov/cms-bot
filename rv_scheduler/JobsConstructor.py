@@ -43,7 +43,7 @@ class JobsConstructor(object):
                  end_time=1000*int(time()))
         return stats['hits']['hits']
         
-    def getJobsCommands(self, workflow_matrix_list=None,workflows_limit=None, workflows_dir="/Users/mrodozov/Projects/cms-bot/steps"): #os.environ["CMSSW_BASE"]+"/pyRelval/"
+    def getJobsCommands(self, workflow_matrix_list=None,workflows_limit=None, workflows_dir="/Users/mrodozov/Projects/cms-bot/steps/"): #os.environ["CMSSW_BASE"]+"/pyRelval/"
 
         #run runTheMatrix and parse the output for each workflow, example results structure in resources/wf.json
         #for now, get it from the file resources/wf.json
@@ -54,7 +54,7 @@ class JobsConstructor(object):
         #wf_base_folder = '/build/cmsbld/mrodozov/testScheduler/CMSCIResourceBalancer/'
         wf_base_folder = workflows_dir
         #wf_base_folder = 'resources/wf_folders/'
-        wf_folders = [fld for fld in os.listdir(wf_base_folder) if os.path.isdir(wf_base_folder+fld)]
+        wf_folders = [fld for fld in os.listdir(wf_base_folder) if os.path.isdir(os.path.join(wf_base_folder, fld))]
         #print os.listdir(wf_base_folder)
         matrix_map = {}
         #print wf_folders
@@ -62,6 +62,7 @@ class JobsConstructor(object):
         for f in wf_folders:
             #print f
             wf_id = f.split('_')[0]
+
             if not os.path.exists(os.path.join(wf_base_folder, f, 'wf_steps.txt')):
                 continue
             matrix_map[wf_id] = {}
@@ -88,6 +89,7 @@ class JobsConstructor(object):
 
     def constructJobsMatrix(self, release, arch, days, page_size, workflow_matrix_list, wf_limit,wfs_basedir):
         matrixMap = self.getJobsCommands(workflow_matrix_list, wf_limit, wfs_basedir)
+        #print matrixMap
         jobs_stats = self.getWorkflowStatsFromES(release, arch, days, page_size)
         #for local test get the stats from a file
 	'''
