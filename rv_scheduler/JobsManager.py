@@ -7,7 +7,6 @@ import os
 import subprocess
 import sys
 import time
-from operator import itemgetter
 from threading import Lock, Thread, Semaphore
 from time import sleep
 
@@ -87,6 +86,7 @@ class JobsManager(object):
         self.workflowIsFinishing = finilazeWorkflow
         self.stepIsStarting = stepIsStartingFunc
         self.stepIsFinishing = stepIsFinishingFunc
+        self.jobs_sorting_function = None #
 
     '''
     methods to check resources availability
@@ -145,8 +145,7 @@ class JobsManager(object):
 
                 next_jobs.append(element)
                 # print i, j, self.jobs[i][j]['avg_time']
-
-        return sorted(next_jobs, key=itemgetter(2), reverse=True)
+        return self.jobs_sorting_function(self, next_jobs)
 
     def putNextJobsOnQueue(self, jobs=None):
         print 'put next jobs on queue', '\n'

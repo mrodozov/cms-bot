@@ -9,7 +9,7 @@ import Queue
 from optparse import OptionParser
 import json
 from multiprocessing import cpu_count
-from CustomFunctions import relval_test_process, process_relval_workflow_step
+from CustomFunctions import relval_test_process, process_relval_workflow_step, cpu_priority_sorting_function
 import psutil
 
 import os
@@ -103,6 +103,7 @@ if __name__ == "__main__":
     jm.finishJobsEvent = finishJobsEvent
 
     jm.job_process_function = relval_test_process
+    jm.jobs_sorting_function = cpu_priority_sorting_function
 
     jm.putJobsOnProcessQueue.start()
     jp.start()
@@ -124,5 +125,5 @@ if __name__ == "__main__":
 
     #print wf_list
     
-
+    #add on matrix construct and wf stats for them
 

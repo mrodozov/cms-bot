@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import time
+from operator import itemgetter
 SCRIPT_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 CMS_BOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 
@@ -253,3 +254,11 @@ def stepIsFinishingFunc(caller_obj, job_obj):
 '''
 end of callbacks. you are shooting a fly with bazooka here. whatever
 '''
+
+'''
+jobs sorting functions
+'''
+
+
+def cpu_priority_sorting_function(caller_obj, next_jobs):
+    return sorted(next_jobs, key=itemgetter(2), reverse=True)
