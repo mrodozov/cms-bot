@@ -40,10 +40,10 @@ class JobsConstructor(object):
                               architecture=arch
                              ),
                  start_time=1000*int(time()-(86400*lastNdays)),
-                 end_time=1000*int(time()))
+                 end_time=1000*int(time()), scroll=True)
         return stats['hits']['hits']
         
-    def getJobsCommands(self, workflow_matrix_list=None,workflows_limit=None, workflows_dir="/Users/mrodozov/Projects/cms-bot/steps/"): #os.environ["CMSSW_BASE"]+"/pyRelval/"
+    def getJobsCommands(self, workflow_matrix_list=None,workflows_limit=None, workflows_dir=os.environ["CMSSW_BASE"]+"/pyRelval/"): #os.environ["CMSSW_BASE"]+"/pyRelval/"
 
         #run runTheMatrix and parse the output for each workflow, example results structure in resources/wf.json
         #for now, get it from the file resources/wf.json
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     # fix ES queries
 
     opts = None
-    release = 'CMSSW_10_4_X'
+    release = 'CMSSW_10_5_X'
     arch = 'slc7_amd64_gcc700'
     days = 7
     page_size = 0

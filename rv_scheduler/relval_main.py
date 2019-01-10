@@ -15,7 +15,6 @@ import psutil
 import os
 import sys
 
-
 from cmssw_known_errors import get_known_errors
 
 if __name__ == "__main__":
@@ -30,11 +29,12 @@ if __name__ == "__main__":
     parser.add_option("-p", "--page", dest="page_size",
                       help="Page size, default 0 means no page and get all data in one go", type=int, default=0)
     opts, args = parser.parse_args()
-    opts.release = "CMSSW_10_4_CLANG"
-    opts.arch = "slc7_amd64_gcc700"
-    '''
+    #opts.release = "CMSSW_10_5_CLANG"
+    #opts.arch = "slc7_amd64_gcc700"
+    #opts.days = 7
+
     if not opts.arch:
-        if opts.release == "CMSSW_10_4_X":
+        if opts.release == "CMSSW_10_5_X":
             opts.arch = "slc7_amd64_gcc700"
         else:
             script_path = abspath(dirname(argv[0]))
@@ -45,16 +45,13 @@ if __name__ == "__main__":
                 opts.arch = "slc7_amd64_gcc700"
             else:
                 opts.arch = out
-    '''
+
     ''' gets the CL arguments '''
 
-    print opts.release, opts.arch, opts.days
+    print 'args: ', opts.release, opts.arch, opts.days
 
-    #opts.release = 'CMSSW_9_3_X*'
-    #opts.arch = 'slc6_amd64_gcc630'
-    #opts.days = 7
     opts.page_size = 0
-    wf_list = argv[1]
+    wf_list = None
 
     #with open('resources/wf_slc6_530_1of5.txt') as wf_list_file:
         #wf_list = wf_list_file.read().replace('\n', ',')
@@ -79,7 +76,7 @@ if __name__ == "__main__":
     #print known_errors
     
     jc = JobsConstructor(None, known_errors)
-    matrixMap =jc.constructJobsMatrix(opts.release, opts.arch, opts.days, opts.page_size, wf_list, wf_limit, "/Users/mrodozov/Projects/cms-bot/steps")
+    matrixMap =jc.constructJobsMatrix(opts.release, opts.arch, opts.days, opts.page_size, wf_list, wf_limit, os.environ["CMSSW_BASE"]+"/pyRelval/")
     result = jc.getWorkflowStatsFromES(release=opts.release, arch=opts.arch, lastNdays=7, page_size=10000)
     #print json.dumps(result, indent=2, sort_keys=True, separators=(',', ': '))
 
@@ -102,7 +99,7 @@ if __name__ == "__main__":
     jm.getNextJobsEvent = getNextJobsEvent
     jm.finishJobsEvent = finishJobsEvent
 
-    jm.job_process_function = relval_test_process
+    jm.job_process_function =  process_relval_workflow_step # relval_test_process # for testing the chain
     jm.jobs_sorting_function = cpu_priority_sorting_function
 
     jm.putJobsOnProcessQueue.start()
