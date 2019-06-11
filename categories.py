@@ -15,7 +15,7 @@ PR_HOLD_MANAGERS = [ "kpedro88" ]
 
 COMMON_CATEGORIES = [ "orp", "tests", "code-checks" ]
 EXTERNAL_CATEGORIES = [ "externals" ]
-EXTERNAL_REPOS = [ "cms-data", "cms-externals", gh_user]
+EXTERNAL_REPOS = [ "npc-data", "npc-externals", gh_user]
 
 CMSSW_REPOS = [ gh_user+"/"+gh_cmssw ]
 CMSDIST_REPOS = [ gh_user+"/"+gh_cmsdist ]
@@ -40,7 +40,7 @@ CMSSW_L2 = {
   "franzoni":         ["operations", "alca"],
   "fwyzard":          ["hlt"],
   "ggovi":            ["db"],
-  "gudrutis":         ["externals"],
+  "gudrutis":         ["ext"],
   "ianna":            ["geometry"],
   "jfernan2":         ["dqm"],
   "kmaeshima":        ["dqm"],
@@ -60,7 +60,7 @@ CMSSW_L2 = {
   "santocch":         ["analysis"],
   "schneiml":         ["dqm"],
   "slava77":          ["reconstruction"],
-  "smuzaffar":        ["core", "externals"],
+  "smuzaffar":        ["core"],
   "ssekmen":          ["fastsim"],
   "tlampen":          ["alca"],
   "tocheng":          ["alca"],
@@ -78,6 +78,6 @@ COMMENT_CONVERSION['kpedro88']={'comments_before': datetime.strptime('2018-07-13
 
 def external_to_package(repo_fullname):
   org, repo = repo_fullname.split("/",1)
-  if org == "cms-data":
+  if org == "npc-data":
     return repo.replace('-','/')
   return ''

@@ -358,6 +358,7 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
           print("Skipping PR as it does not belong to valid CMSDIST branch")
           return
 
+
     print("Following packages affected:")
     print("\n".join(packages))
     pkg_categories = set([category for package in packages
@@ -1149,4 +1150,5 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
   if mustMerge == True:
     print("This pull request must be merged.")
     if not dryRun and (pr.state == "open"): pr.merge()
+
 

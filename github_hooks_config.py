@@ -3,7 +3,7 @@ GITHUB_HOOKS["Jenkins_Github_Hook"] = {
   "active":True,
   "events":  ["issues","pull_request","issue_comment"],
   "config": {
-    "url": "https://cmssdt.cern.ch/SDT/cgi-bin/github_webhook",
+    "url": "https://cmssdt.cern.ch/SDT/cgi-bin/github_webhook_py.py",
     "content_type":"json"
   }
 }
@@ -12,7 +12,7 @@ GITHUB_HOOKS["Jenkins_Github_Hook_Push"] = {
   "active":True,
   "events":  ["push"],
   "config": {
-    "url": "https://cmssdt.cern.ch/SDT/cgi-bin/github_webhook?push",
+    "url": "https://cmssdt.cern.ch/SDT/cgi-bin/github_webhook_py.py?push",
     "content_type":"json"
   }
 }
