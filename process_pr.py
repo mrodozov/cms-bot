@@ -359,6 +359,7 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
           return
 
 
+
     print("Following packages affected:")
     print("\n".join(packages))
     pkg_categories = set([category for package in packages
