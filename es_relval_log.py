@@ -37,8 +37,7 @@ def get_exit_code(workflow_log,step):
     pass
   return -1
 
-
-def es_parse_jobreport(payload,logFile):
+def es_parse_jobreport(payload, logFile):
   xmlFile = "/".join(logFile.split('/')[:-1]) + "/JobReport"+logFile.split('/')[-1].split("_")[0][-1]+".xml"
   if not os.path.exists(xmlFile):
     if not '/JobReport1.xml' in xmlFile: print("No JR File:",xmlFile)
@@ -76,6 +75,9 @@ def es_parse_jobreport(payload,logFile):
             val=float(val)
           payload[i.get("Name")] = val
   return payload
+
+def es_parse_jobreport_extra_args(payload, logFile):
+  print('muh extra data')
 
 def es_parse_log(logFile):
   t = os.path.getmtime(logFile)
@@ -164,13 +166,14 @@ def es_parse_log(logFile):
   except Exception as e:
     print(e)
   print("sending data for ",logFile)
-  try:send_payload(index,document,id,json.dumps(payload))
-  except:pass
+  print('testing whats reading')
+  #try:send_payload(index,document,id,json.dumps(payload))
+  #except:pass
   if datasets:
     dataset = {"type" : "relvals", "name" : "%s/%s" % (payload["workflow"], payload["step"])}
     for fld in ["release","architecture","@timestamp"]: dataset[fld] = payload[fld]
     for ds in datasets:
-      ds_items = ds.split("?",1)
+      ds_items = ds.split("?", 1)
       ds_items.append("")
       ibeos = "/store/user/cmsbuild"
       if ibeos in ds_items[0]: ds_items[0] = ds_items[0].replace(ibeos,"")
@@ -179,9 +182,18 @@ def es_parse_log(logFile):
       dataset["protocol_opts"]=ds_items[1]
       dataset["lfn"]="/store/"+ds_items[0].split("/store/",1)[1].strip()
       idx = sha1(id + ds).hexdigest()
+      print('printing dataset to see it')
       print(dataset)
-      send_payload("ib-dataset-"+week,"relvals-dataset",idx,json.dumps(dataset))
+
+      #send_payload("ib-dataset-"+week,"relvals-dataset",idx,json.dumps(dataset))
 
 if __name__ == "__main__":
-  print("Processing ",sys.argv[1])
-  es_parse_log(sys.argv[1])
+  job_report_file_name = '/home/mrodozov/Downloads/job_reports/job_reports/1000.0_RunMinBias2011A+RunMinBias2011A+TIER0+SKIMD+HARVESTDfst2+ALCASPLIT/step2_RunMinBias2011A+RunMinBias2011A+TIER0+SKIMD+HARVESTDfst2+ALCASPLIT.log'
+  print("Processing ", job_report_file_name)
+  payload = {'url': 'some_url'}
+  #es_parse_jobreport(payload, job_report_file_name)
+  es_parse_log(job_report_file_name)
+  #parsed_log = json.loads(payload)
+
+  #print( json.dumps(payload, indent=2, sort_keys=True, separators=(',', ': ')))
+  #es_parse_log(sys.argv[1])

@@ -106,7 +106,8 @@ def get_payload_wscroll(index, query):
 
 def get_template(index=''):
   data = {'index':index, 'api': '/_template', 'prefix': True}
-  return urlopen(CMSSDT_ES_QUERY,json.dumps(data)).read()
+  sslcon = ssl._create_unverified_context()
+  return urlopen(CMSSDT_ES_QUERY,json.dumps(data), context=sslcon).read()
 
 def find_indexes(index):
   idxs = {}
@@ -127,7 +128,8 @@ def find_indexes(index):
 
 def get_indexes(index='cmssdt-*'):
   data = {'index':index, 'api': '/_cat', 'prefix': True}
-  return urlopen(CMSSDT_ES_QUERY,json.dumps(data)).read()
+  sslcon = ssl._create_unverified_context()
+  return urlopen(CMSSDT_ES_QUERY,json.dumps(data),context=sslcon).read()
 
 def close_index(index):
   if not index.startswith('cmssdt-'): index = 'cmssdt-' + index
