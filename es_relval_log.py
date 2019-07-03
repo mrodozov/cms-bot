@@ -61,10 +61,10 @@ def es_parse_jobreport(payload, logFile):
         metrics_list = j.getchildren()
         for i in metrics_list:
           name=i.get("Name")
-          if name in ["AverageGrowthRateRss", "AverageGrowthRateVsize", "PeakValueVsize", "PeakValueRss"]:
-            val = i.get("Value")
-            if 'nan' in val: val=''
-            payload[name] = val
+          #if name in ["AverageGrowthRateRss", "AverageGrowthRateVsize", "PeakValueVsize", "PeakValueRss"]:
+          val = i.get("Value")
+          if 'nan' in val: val=''
+          payload[name] = val
       elif j.get("Metric") == "Timing":
         metrics_list = j.getchildren()
         for i in metrics_list:
@@ -74,7 +74,12 @@ def es_parse_jobreport(payload, logFile):
           elif 'e' in val:
             val=float(val)
           payload[i.get("Name")] = val
+
   return payload
+
+
+# wait for Fabio to say which fields he'd like to plot
+
 
 def es_parse_jobreport_extra_args(payload, logFile):
   print('muh extra data')
@@ -165,9 +170,11 @@ def es_parse_log(logFile):
     payload = es_parse_jobreport(payload,logFile)
   except Exception as e:
     print(e)
-  print("sending data for ",logFile)
-  print('testing whats reading')
+  print(" >>>>> sending data for ",logFile)
+  print(' >>>>> testing whats reading')
   #try:send_payload(index,document,id,json.dumps(payload))
+  print( json.dumps(payload, indent=2, sort_keys=True, separators=(',', ': ')))
+  print('data sent')
   #except:pass
   if datasets:
     dataset = {"type" : "relvals", "name" : "%s/%s" % (payload["workflow"], payload["step"])}
@@ -183,16 +190,18 @@ def es_parse_log(logFile):
       dataset["lfn"]="/store/"+ds_items[0].split("/store/",1)[1].strip()
       idx = sha1(id + ds).hexdigest()
       print('printing dataset to see it')
-      print(dataset)
-
+      print( json.dumps(dataset, indent=2, sort_keys=True, separators=(',', ': ')))
       #send_payload("ib-dataset-"+week,"relvals-dataset",idx,json.dumps(dataset))
 
 if __name__ == "__main__":
-  job_report_file_name = '/home/mrodozov/Downloads/job_reports/job_reports/1000.0_RunMinBias2011A+RunMinBias2011A+TIER0+SKIMD+HARVESTDfst2+ALCASPLIT/step2_RunMinBias2011A+RunMinBias2011A+TIER0+SKIMD+HARVESTDfst2+ALCASPLIT.log'
-  print("Processing ", job_report_file_name)
+
+  data_dir = '/data/sdt/buildlogs/slc7_amd64_gcc700/www/tue/11.0-tue-23/CMSSW_11_0_X_2019-07-02-2300/pyRelValPartialLogs/9.0_Higgs200ChargedTaus+Higgs200ChargedTausINPUT+DIGI+RECO+HARVEST/'
+  job_report_file_name = 'step2_Higgs200ChargedTaus+Higgs200ChargedTausINPUT+DIGI+RECO+HARVEST.log'
+  full_path = os.path.join(data_dir,job_report_file_name)
+  print("Processing ", full_path)
   payload = {'url': 'some_url'}
-  #es_parse_jobreport(payload, job_report_file_name)
-  es_parse_log(job_report_file_name)
+  es_parse_jobreport(payload, full_path)
+  es_parse_log(full_path)
   #parsed_log = json.loads(payload)
 
   #print( json.dumps(payload, indent=2, sort_keys=True, separators=(',', ': ')))
