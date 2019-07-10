@@ -21,13 +21,11 @@ if __name__ == "__main__":
     for i in indexes_name_only:
         print(i)
         current_idx = i
-        tmp_idx = i+'_tmp'
+        tmp_idx = i+'_tempp'
         request_data = json.dumps({"source":{"index": current_idx }, "dest":{"index": tmp_idx} })
         print(str(request_data))
         send_request('_reindex/', request_data, method='POST')
-        #delete_index(current_idx)
-        #request_data = {"source":{"index": tmp_idx }, "dest":{"index": current_idx} }
-        #send_request('_reindex', request_data, method='POST')
-        #delete_index(tmp_idx)
-
-
+        delete_index(current_idx)
+        request_data = {"source":{"index": tmp_idx }, "dest":{"index": current_idx} }
+        send_request('_reindex/', request_data, method='POST')
+        delete_index(tmp_idx)
