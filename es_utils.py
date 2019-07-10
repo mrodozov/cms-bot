@@ -126,9 +126,8 @@ def find_indexes(index):
   return idxs
 
 def get_indexes(index='cmssdt-*'):
-  
   data = {'index':index, 'api': '/_cat', 'prefix': True}
-  return urlopen(CMSSDT_ES_QUERY,json.dumps(data),context=sslcon).read()
+  return urlopen(CMSSDT_ES_QUERY,json.dumps(data)).read()
 
 def close_index(index):
   if not index.startswith('cmssdt-'): index = 'cmssdt-' + index
