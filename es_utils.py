@@ -54,7 +54,7 @@ def send_request(uri, payload=None, passwd_file=None, method=None):
     if method: request.get_method = lambda: method
     content = urlopen(request)
   except Exception as e:
-    print("ERROR:",url,str(e))
+    print("SEND REQUEST URL OPEN ERROR:",url,str(e))
     return False
   return True
 
