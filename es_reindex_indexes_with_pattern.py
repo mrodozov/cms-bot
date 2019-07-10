@@ -10,6 +10,8 @@ if __name__ == "__main__":
     indexes = get_indexes('cmssdt-'+pattern+'*').splitlines()
     indexes_name_only = []
     for i in indexes:
+        if 'open' not in i and 'green' not in i:
+            continue
         list_of_recs = i.split()
         print(list_of_recs)
         for j in list_of_recs:
