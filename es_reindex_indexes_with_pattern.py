@@ -3,6 +3,7 @@ from __future__ import print_function
 from es_utils import get_indexes, open_index, close_index, delete_index, send_request
 import sys
 import json
+from time import sleep
 
 if __name__ == "__main__":
 
@@ -41,6 +42,8 @@ if __name__ == "__main__":
         #open the index if its closed
         if current_idx in closed_idxs_list:
             open_index(current_idx)
+        # wait 5 seconds
+        sleep(5)
 
         request_finished_properly = send_request('_reindex/', request_data, method='POST')
         if request_finished_properly:
@@ -49,6 +52,8 @@ if __name__ == "__main__":
         else:
             print('reindexing failed for ', current_idx, ' to ',tmp_idx, ', crash the jenkins job')
             exit(-1)
+        #wait 5 seconds
+        sleep(5)
 
         request_data =  json.dumps({"source":{"index": tmp_idx }, "dest":{"index": current_idx}})
         request_finished_properly = send_request('_reindex/', request_data, method='POST')
