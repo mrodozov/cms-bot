@@ -39,7 +39,7 @@ if __name__ == "__main__":
         # assumption is not readable yet ()
         sleep(10)
 
-        request_data = {"source":{"index": tmp_idx }, "dest":{"index": current_idx} }
+        request_data =  json.dumps({"source":{"index": tmp_idx }, "dest":{"index": current_idx}})
         request_finished_properly = send_request('_reindex/', request_data, method='POST')
         if request_finished_properly:
             delete_index(tmp_idx)
