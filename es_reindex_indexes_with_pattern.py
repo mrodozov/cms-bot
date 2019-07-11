@@ -23,11 +23,21 @@ if __name__ == "__main__":
     for i in indexes_name_only:
         print(i)
         current_idx = i
-        tmp_idx = i+'_tempp'
+        tmp_idx = i+'_temppp'
         request_data = json.dumps({"source":{"index": current_idx }, "dest":{"index": tmp_idx} })
-        print(str(request_data))
-        send_request('_reindex/', request_data, method='POST')
-        delete_index(current_idx)
+        print('request for reindex body: ', request_data)
+        request_finished_properly = send_request('_reindex/', request_data, method='POST')
+        if request_finished_properly:
+            delete_index(current_idx)
+        else:
+            print('reindexing failed for ', current_idx, ' to ',tmp_idx, ', crash the jenkins job')
+            exit(-1)
+
         request_data = {"source":{"index": tmp_idx }, "dest":{"index": current_idx} }
-        send_request('_reindex/', request_data, method='POST')
-        delete_index(tmp_idx)
+        request_finished_properly = send_request('_reindex/', request_data, method='POST')
+        if request_finished_properly:
+            delete_index(tmp_idx)
+        else:
+            print('reindexing failed for ', tmp_idx, ' to ', current_idx, ', crash the jenkins job, try execute the request manually')
+            exit(-1)
+
