@@ -27,9 +27,6 @@ if __name__ == "__main__":
     print('list with open idxs', opened_idxs_list)
     print('list with closed idx', closed_idxs_list)
 
-    #just kill the job
-    #exit(-3)
-
     print('indexes names only')
     print(indexes_name_only)
     for i in indexes_name_only:
@@ -47,7 +44,7 @@ if __name__ == "__main__":
 
         request_finished_properly = send_request('_reindex/', request_data, method='POST')
         if request_finished_properly:
-            print('first reindexing complete, delete')
+            print('forward reindexing complete, delete')
             delete_index(current_idx)
         else:
             print('reindexing failed for ', current_idx, ' to ',tmp_idx, ', crash the jenkins job')
@@ -58,7 +55,7 @@ if __name__ == "__main__":
         request_data =  json.dumps({"source":{"index": tmp_idx }, "dest":{"index": current_idx}})
         request_finished_properly = send_request('_reindex/', request_data, method='POST')
         if request_finished_properly:
-            print('first reindexing complete, delete the temp idx')
+            print('reverse reindexing complete, delete the temp idx')
             delete_index(tmp_idx)
         else:
             print('reindexing failed for ', tmp_idx, ' to ', current_idx, ', crash the jenkins job, try manually')
