@@ -12,10 +12,11 @@ full_cmssw_pattern = "(true|false)"
 cmssw_extra_prs_ONLY_pttrn = "(cms-sw\/cmssw#+[0-9][0-9]*)"
 cmsdist_extra_prs_ONLY_pttrn = "(cms-sw\/cmsdist#+[0-9][0-9]*)"
 
-cherry_picked_map = { "workflows" : WF_PATTERN , "arch" : ARCH_PATTERN , "cmssw" : CMSSW_QUEUE_PATTERN,
+cherry_picked_map = { "workflows" : WF_PATTERN , "arch" : ARCH_PATTERN , "cmssw_queue_pattern" : CMSSW_QUEUE_PATTERN,
                       "cmsdist_prs" : cmsdist_extra_prs_ONLY_pttrn, # matches more then one
                       "cmssw_prs" : cmssw_extra_prs_ONLY_pttrn, # matches more then one
-                      "full_cmssw" : full_cmssw_pattern
+                      "full_cmssw" : full_cmssw_pattern, #
+                      "cmssw_release_queue_pattern" : CMSSW_RELEASE_QUEUE_PATTERN
                       }
 
 def parse_extra_params(full_comment):
