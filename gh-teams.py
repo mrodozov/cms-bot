@@ -9,9 +9,9 @@ from socket import setdefaulttimeout
 from github_utils import api_rate_limits, github_api,add_organization_member
 setdefaulttimeout(120)
 
-CMS_OWNERS = [ "smuzaffar", "cmsbuild", "davidlange6", "fabiocos" ]
-CMS_SDT    = [ "mrodozov", "gudrutis" ]
-CMS_ORGANIZATIONS = [ "cms-data", "cms-externals", "cms-sw" ]
+CMS_OWNERS = [ "npcbot", "mrodozov" ]
+CMS_SDT    = [ "mrodozov" ]
+CMS_ORGANIZATIONS = [ "npc-data", "npc-externals", "mrodozov" ]
 
 REPO_OWNERS = {}
 REPO_TEAMS  = {}

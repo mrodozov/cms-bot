@@ -34,6 +34,12 @@ PUSH_TEST_ISSUE_MSG='^\[Jenkins CI\] Testing commit: [0-9a-f]+$'
 HOLD_MSG = "Pull request has been put on hold by "
 #Regexp to match the test requests
 WF_PATTERN="[1-9][0-9]*(\.[0-9]+|)"
+
+'''
+TODO - remove this later
+in format the provided variable names are substituted in place in the eval of the function with their value
+'''
+
 CMSSW_PR_PATTERN=format("(#[0-9]+|https://+github.com/+%(cmssw_repo)s/+pull/+[0-9]+/*|)", cmssw_repo=CMSSW_REPO_NAME)
 CMSDIST_PR_PATTERN=format("(%(cmsdist_repo)s#[0-9]+|https://+github.com/+%(cmsdist_repo)s/+pull/+[0-9]+/*|)", cmsdist_repo=CMSDIST_REPO_NAME)
 CMSSW_QUEUE_PATTERN='CMSSW_[0-9]+_[0-9]+_([A-Z][A-Z0-9]+_|)X'
@@ -242,7 +248,7 @@ def check_test_cmd_new(first_line, repo):
     if m.group(6): wfs = ",".join(set(m.group(6).replace(" ","").split(",")))
     if m.group(11):
       for pr in [x.strip().split('/github.com/',1)[-1].replace('/pull/','#').strip('/') for x in m.group(11).split(",")]:
-        while '//' in pr: pr = pr.repalce('//','/')
+        while '//' in pr: pr = pr.replace('//','/')
         if pr.startswith('#'): pr = repo+pr
         prs.append(pr)
     if m.group(20): cmssw_que = m.group(20)
@@ -284,8 +290,10 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
   prId = issue.number
   repository = repo.full_name
   repo_org, repo_name = repository.split("/",1)
-  new_tests = False
-  if 'CMS_BOT_MULTI_PR_TESTS' in environ: new_tests = True
+  new_tests = True
+  #if 'CMS_BOT_MULTI_PR_TESTS' in environ: new_tests = True #
+  # TODO - uncomment later
+  #CMS_BOT_MULTI_PR_TESTS
   print("New Tests:", new_tests)
   if not cmsbuild_user: cmsbuild_user=repo_config.CMSBUILD_USER
   print("Working on ",repo.full_name," for PR/Issue ",prId,"with admin user",cmsbuild_user)
@@ -338,7 +346,8 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
     if cmssw_repo or not external_repo:
       if cmssw_repo:
         if (pr.base.ref=="master"): signing_categories.add("code-checks")
-        updateMilestone(repo, issue, pr, dryRun)
+        #updateMilestone(repo, issue, pr, dryRun)
+        print('update milestone')
       packages = sorted([x for x in set([cmssw_file2Package(repo_config, f)
                            for f in get_changed_files(repo, pr)])])
       print("First Package: ",packages[0])
@@ -534,6 +543,7 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
     # Some of the special users can say "hold" prevent automatic merging of
     # fully signed PRs.
     if re.match("^hold$", first_line, re.I):
+
       if commenter in CMSSW_L1 + list(CMSSW_L2.keys()) + releaseManagers + PR_HOLD_MANAGERS: hold[commenter]=1
       continue
     if re.match(REGEX_EX_CMDS, first_line, re.I):
@@ -660,8 +670,10 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
 
       # Check if the someone asked to trigger the tests
       if valid_commenter:
-        test_cmd_func = check_test_cmd
-        if new_tests: test_cmd_func = check_test_cmd_new
+        print('debug - valid commenter')
+        test_cmd_func = check_test_cmd # alright then
+        if new_tests:
+          test_cmd_func = check_test_cmd_new
         ok, v1, v2, v3, v4 = test_cmd_func(first_line, repository)
         if ok:
           cmsdist_pr = v1
