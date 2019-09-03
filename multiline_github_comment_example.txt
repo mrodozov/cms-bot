@@ -1,5 +1,6 @@
 test parameters
-extra_prs = cms-sw/cmssw#123 , cms-sw/cmssw#123 , cms-sw/cmsdist#123 , cmsdata/somename#123
-releases=   slc7_amd64_gcc820 , slc7_aarch64_gcc700 , slc7_ppc64le_gcc700 , cmssw_queue {""} , cmssw_queue/arch
-workflows =   1.0 , 2.0 , 1002.34
-full_cmssw = true
+extra_prs = cms-sw/cmssw#123,    cms-sw/cmssw#134, cms-sw/cmsdist#123,  cms-sw/cmsdist#100, cmsdata/somename#123
+releases=   slc7_amd64_gcc820,    slc7_aarch64_gcc700, slc7_ppc64le_gcc700, cmssw_queue {""}, cmssw_queue/arch
+workflows =  1.0,2.0,1002.34
+full_cmssw =    true
+build_machine = None

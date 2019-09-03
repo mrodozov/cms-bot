@@ -27,10 +27,8 @@ def parse_extra_params(full_comment):
 
     matched_extra_args = dict()
 
-    #if not full_comment.split('/n')[0] is "test parameters":
     for l in full_comment.splitlines():
-        match = False
-        extra_arg = None
+
         extra_vals = None
         print('\n --- \n', l)
         for k in cherry_picked_map:
@@ -38,45 +36,33 @@ def parse_extra_params(full_comment):
             if l.find('=') is -1:
                 # only the first line should match this, or the = is missing in the comment, skip if it's missing
                 continue
+
             print('  keyword:', k, '\n  pattern: ', pttrn, '\n  full line: ' , l)
-            line_args = re.sub(r"^\s+", "", l.split('=', 1)[1], flags=re.UNICODE) # trims white spaces in the beginning
+            line_args = l.replace(" ","")
             print(line_args, ' lenght: ', len(line_args))
-            #compiled_pattern = re.compile(pttrn) #re.I is to ignore upper lower case
 
-            m = re.match(pttrn, line_args)
-            #print(m)
+            if line_args.find(',') is -1:
+                extra_vals = [line_args.split("=")[1]]
+            else:
+                line_args = line_args.replace("=", " ")
+                extra_vals = [x for x in re.compile('\s*[,|\s+]\s*').split(line_args)]
+            print('evals', extra_vals)
 
-            if m:
-                match = m
-                extra_arg = k
-                # create new key with
-                extra_vals = line_args.split(',')
+            list_of_matches = []
 
-                
+            print( 'before', list_of_matches)
+            for v in extra_vals:
+                if re.match(pttrn, v):
+                    list_of_matches.append(v)
+                    print('matches', v)
+            print('after', list_of_matches)
 
+            if list_of_matches:
+                matched_extra_args[k] = list_of_matches
 
-                #matched_extra_args[extra_arg] = extra_vals
-                #print('split args: ' , line_args.split(','))
-                #print(matched_extra_args)
-                # only one pattern can match ? actually not :/ collect a one to one pattern match to avoid bugs
-
-                # or don't brake but collect all matches in another list.
-                # so have two lists per line - one with the patterns and one with the lines
-
-                matched_extra_args[extra_arg] = extra_vals
-
-        if match:
-            #matched_extra_args[extra_arg] = extra_vals
-            print(' -- FOUND MATCH ! ', extra_arg, extra_vals)
-
-        #else:
-        #    print('-- no match \n ---')
 
     print('struct is')
     print(json.dumps(matched_extra_args, indent=1, sort_keys=True))
-
-    # if first the
-
 
 
 with open("multiline_github_comment_example.txt") as gh_comment_data:
