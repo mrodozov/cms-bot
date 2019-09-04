@@ -11,9 +11,9 @@ regexp_map = { "workflows" : WF_PATTERN, "cmssw_pr" : CMSSW_PR_PATTERN, "cmsdist
 full_cmssw_pattern = "(true|false)"
 cmssw_extra_prs_ONLY_pttrn = "(cms-sw\/cmssw#+[0-9][0-9]*)"
 cmsdist_extra_prs_ONLY_pttrn = "(cms-sw\/cmsdist#+[0-9][0-9]*)"
-cmsdata_extra_prs = ("cmsdata\/[a-zA-Z0-9]#+[0-9][0-9]*")
+cmsdata_extra_prs = "(cmsdata\/[a-zA-Z0-9][a-zA-Z0-9]*#+[0-9][0-9]*)"
 
-cherry_picked_map = { "workflows" : WF_PATTERN , "arch" : ARCH_PATTERN , "cmssw_queue_pattern" : CMSSW_QUEUE_PATTERN,
+short_map = { "workflows" : WF_PATTERN , "arch" : ARCH_PATTERN , "cmssw_queue_pattern" : CMSSW_QUEUE_PATTERN,
                       "cmsdist_prs" : cmsdist_extra_prs_ONLY_pttrn, # matches more then one
                       "cmssw_prs" : cmssw_extra_prs_ONLY_pttrn, # matches more then one
                       "cmsdata_prs" : cmsdata_extra_prs,
@@ -30,8 +30,8 @@ def parse_extra_params(full_comment):
     matched_extra_args = dict()
     for l in full_comment.splitlines():
 
-        for k in cherry_picked_map:
-            pttrn = cherry_picked_map[k]
+        for k, pttrn in short_map.items():
+            #pttrn = cherry_picked_map[k]
             if l.find('=') is -1:
                 # only the first line should match this, or the = is missing in the comment, skip if it's missing
                 continue
