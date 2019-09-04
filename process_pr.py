@@ -11,6 +11,7 @@ from os.path import join, exists
 from os import environ
 from github_utils import get_token, edit_pr, api_rate_limits
 from socket import setdefaulttimeout
+from parse_extra_pr_params import parse_extra_params, short_map
 from _py2with3compatibility import run_cmd
 
 try: from categories import COMMENT_CONVERSION
@@ -249,6 +250,8 @@ def check_test_cmd_new(first_line, repo):
     return (True, "", ','.join(prs), wfs, cmssw_que)
   return (False, "", "", "", "")
 
+
+
 def get_changed_files(repo, pr, use_gh_patch=False):
   if (not use_gh_patch) and (pr.changed_files<=300): return [f.filename for f in pr.get_files()]
   cmd="curl -s -L https://patch-diff.githubusercontent.com/raw/%s/pull/%s.patch | grep '^diff --git ' | sed 's|.* a/||;s|  *b/.*||' | sort | uniq" % (repo.full_name,pr.number)
@@ -286,6 +289,7 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
   repo_org, repo_name = repository.split("/",1)
   new_tests = False
   if 'CMS_BOT_MULTI_PR_TESTS' in environ: new_tests = True
+  multiline_comment = True #
   print("New Tests:", new_tests)
   if not cmsbuild_user: cmsbuild_user=repo_config.CMSBUILD_USER
   print("Working on ",repo.full_name," for PR/Issue ",prId,"with admin user",cmsbuild_user)
@@ -469,6 +473,7 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
   cmsdist_pr = ''
   cmssw_prs = ''
   extra_wfs = ''
+  global_test_params = {}
   assign_cats = {}
   hold = {}
   extra_labels = {}
@@ -660,9 +665,16 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
 
       # Check if the someone asked to trigger the tests
       if valid_commenter:
+        ok , test_params = something_else(first_line, comment_lines, repository)
+        if ok:
+          global_test_params = test_params
+          continue
+
         test_cmd_func = check_test_cmd
         if new_tests: test_cmd_func = check_test_cmd_new
         ok, v1, v2, v3, v4 = test_cmd_func(first_line, repository)
+        #  if the multiline comment is in there
+
         if ok:
           cmsdist_pr = v1
           cmssw_prs = v2
