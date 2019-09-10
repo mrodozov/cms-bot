@@ -11,7 +11,7 @@ from os.path import join, exists
 from os import environ
 from github_utils import get_token, edit_pr, api_rate_limits
 from socket import setdefaulttimeout
-from parse_extra_pr_params import parse_extra_params, short_map
+#from parse_extra_pr_params import parse_extra_params
 from _py2with3compatibility import run_cmd
 
 try: from categories import COMMENT_CONVERSION
@@ -58,6 +58,23 @@ REGEX_TEST_REG = re.compile(TEST_REGEXP, re.I)
 REGEX_TEST_REG_NEW = re.compile(TEST_REGEXP_NEW, re.I)
 REGEX_TEST_ABORT = re.compile("^\s*((@|)cmsbuild\s*[,]*\s+|)(please\s*[,]*\s+|)abort(\s+test|)$", re.I)
 TEST_WAIT_GAP=720
+
+
+regexp_map = { "workflows" : WF_PATTERN, "cmssw_pr" : CMSSW_PR_PATTERN, "cmsdist_pr" : CMSDIST_PR_PATTERN,
+               "release_queue" : CMSSW_RELEASE_QUEUE_PATTERN , "arch" : ARCH_PATTERN , "cmssw" : CMSSW_QUEUE_PATTERN }
+
+full_cmssw_pattern = "(true|false)"
+cmssw_extra_prs_ONLY_pttrn = "(cms-sw\/cmssw#+[0-9][0-9]*)"
+cmsdist_extra_prs_ONLY_pttrn = "(cms-sw\/cmsdist#+[0-9][0-9]*)"
+cmsdata_extra_prs = "(cmsdata\/[a-zA-Z0-9][a-zA-Z0-9]*#+[0-9][0-9]*)"
+
+short_map = { "workflows" : WF_PATTERN , "arch" : ARCH_PATTERN , "cmssw_queue_pattern" : CMSSW_QUEUE_PATTERN,
+                      "cmsdist_prs" : cmsdist_extra_prs_ONLY_pttrn, # matches more then one
+                      "cmssw_prs" : cmssw_extra_prs_ONLY_pttrn, # matches more then one
+                      "cmsdata_prs" : cmsdata_extra_prs,
+                      "full_cmssw" : full_cmssw_pattern, #
+                      "cmssw_release_queue_pattern" : CMSSW_RELEASE_QUEUE_PATTERN
+                      }
 
 def get_last_commit(pr):
   last_commit = None
@@ -250,7 +267,44 @@ def check_test_cmd_new(first_line, repo):
     return (True, "", ','.join(prs), wfs, cmssw_que)
   return (False, "", "", "", "")
 
+def parse_extra_params(first_line, full_comment):
+  # check first line
+  # if not "test parameters" in full_comment.splitlines()[0]:
+  if not "test parameters" in first_line:
+    print("not a proper multiline comment")
+    return {}  # return empty
 
+  matched_extra_args = dict()
+  #for l in full_comment.splitlines():
+  for l in full_comment:
+
+    for k, pttrn in short_map.items():
+      # pttrn = cherry_picked_map[k]
+      if l.find('=') is -1:
+        # only the first line should match this, or the = is missing in the comment, skip if it's missing
+        continue
+
+      line_args = l.replace(" ", "")
+
+      if line_args.find(',') is -1:
+        extra_vals = [line_args.split("=")[1]]
+      else:
+        line_args = line_args.replace("=", " ")
+        extra_vals = [x for x in re.compile('\s*[,|\s+]\s*').split(line_args)]
+      list_of_matches = []
+
+      for v in extra_vals:
+        if re.match(pttrn, v):
+          list_of_matches.append(v)
+
+      if list_of_matches:
+        matched_extra_args[k] = list_of_matches
+
+  return matched_extra_args
+
+def multiline_check_function(first_line, comment_lines, repository):
+  extra_params = parse_extra_params(first_line, comment_lines)
+  return True, extra_params
 
 def get_changed_files(repo, pr, use_gh_patch=False):
   if (not use_gh_patch) and (pr.changed_files<=300): return [f.filename for f in pr.get_files()]
@@ -502,7 +556,8 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
     first_line = comment_lines[0:1]
     if not first_line: continue
     first_line = first_line[0]
-    print("DEBUG: comment:",commenter,":",first_line)
+    print("DEBUG: first line comment:",commenter,":",first_line)
+    print("DEBUG: full comment ", commenter, ":", comment_lines)
     if (commenter == cmsbuild_user) and re.match(ISSUE_SEEN_MSG, first_line):
       already_seen = comment
       backport_pr_num = get_backported_pr(comment_msg)
@@ -665,8 +720,8 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
 
       # Check if the someone asked to trigger the tests
       if valid_commenter:
-        ok , test_params = something_else(first_line, comment_lines, repository)
-        if ok:
+        valid_multiline_comment , test_params = multiline_check_function(first_line, comment_lines, repository)
+        if valid_multiline_comment:
           global_test_params = test_params
           continue
 

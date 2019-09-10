@@ -1,9 +1,10 @@
 from __future__ import print_function
 import json
 import re
-from process_pr import format
-from process_pr import CMSSW_PR_PATTERN, CMSDIST_PR_PATTERN,\
-    CMSSW_QUEUE_PATTERN, ARCH_PATTERN, CMSSW_RELEASE_QUEUE_PATTERN, WF_PATTERN, TEST_REGEXP
+
+def format(s, **kwds): return s % kwds
+#from process_pr import CMSSW_PR_PATTERN, CMSDIST_PR_PATTERN,\
+#    CMSSW_QUEUE_PATTERN, ARCH_PATTERN, CMSSW_RELEASE_QUEUE_PATTERN, WF_PATTERN, TEST_REGEXP
 
 regexp_map = { "workflows" : WF_PATTERN, "cmssw_pr" : CMSSW_PR_PATTERN, "cmsdist_pr" : CMSDIST_PR_PATTERN,
                "release_queue" : CMSSW_RELEASE_QUEUE_PATTERN , "arch" : ARCH_PATTERN , "cmssw" : CMSSW_QUEUE_PATTERN }
@@ -20,6 +21,9 @@ short_map = { "workflows" : WF_PATTERN , "arch" : ARCH_PATTERN , "cmssw_queue_pa
                       "full_cmssw" : full_cmssw_pattern, #
                       "cmssw_release_queue_pattern" : CMSSW_RELEASE_QUEUE_PATTERN
                       }
+
+WF_PATTERN="[1-9][0-9]*(\.[0-9]+|)"
+
 
 def parse_extra_params(full_comment):
     # check first line
