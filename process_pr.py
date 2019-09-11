@@ -11,8 +11,8 @@ from os.path import join, exists
 from os import environ
 from github_utils import get_token, edit_pr, api_rate_limits
 from socket import setdefaulttimeout
-#from parse_extra_pr_params import parse_extra_params
 from _py2with3compatibility import run_cmd
+import json
 
 try: from categories import COMMENT_CONVERSION
 except: COMMENT_CONVERSION={}
@@ -303,8 +303,19 @@ def parse_extra_params(first_line, full_comment):
   return matched_extra_args
 
 def multiline_check_function(first_line, comment_lines, repository):
+  # few trivial checks that doesn not belong in the parsin function
+  multiline_comment_ok = False
+
+  if not "test parameters" in first_line or len(comment_lines) < 2:
+    print('non proper multiline comment')
+    return multiline_comment_ok, {}
+
   extra_params = parse_extra_params(first_line, comment_lines)
-  return True, extra_params
+  print('comment lines size: ' , len(comment_lines))  # prints the length of the list
+  # first line might be right, but none of the provided lines that follows. check number of meaningful params
+  if len(extra_params.keys()) > 0:
+    multiline_comment_ok = True
+  return multiline_comment_ok, extra_params
 
 def get_changed_files(repo, pr, use_gh_patch=False):
   if (not use_gh_patch) and (pr.changed_files<=300): return [f.filename for f in pr.get_files()]
@@ -723,6 +734,8 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
         valid_multiline_comment , test_params = multiline_check_function(first_line, comment_lines, repository)
         if valid_multiline_comment:
           global_test_params = test_params
+          print("multiline comments:")
+          print(json.dumps(test_params, indent=1, sort_keys=True))
           continue
 
         test_cmd_func = check_test_cmd
