@@ -59,8 +59,7 @@ REGEX_TEST_REG_NEW = re.compile(TEST_REGEXP_NEW, re.I)
 REGEX_TEST_ABORT = re.compile("^\s*((@|)cmsbuild\s*[,]*\s+|)(please\s*[,]*\s+|)abort(\s+test|)$", re.I)
 TEST_WAIT_GAP=720
 
-
-regexp_map = { "workflows" : WF_PATTERN, "cmssw_pr" : CMSSW_PR_PATTERN, "cmsdist_pr" : CMSDIST_PR_PATTERN,
+regexp_map = { "workflows" : format('^\s*%(workflow)s(\s*,\s*%(workflow)s|)*\s*$', workflow= WF_PATTERN), "cmssw_pr" : CMSSW_PR_PATTERN, "cmsdist_pr" : CMSDIST_PR_PATTERN,
                "release_queue" : CMSSW_RELEASE_QUEUE_PATTERN , "arch" : ARCH_PATTERN , "cmssw" : CMSSW_QUEUE_PATTERN }
 
 full_cmssw_pattern = "(true|false)"
@@ -68,12 +67,11 @@ cmssw_extra_prs_ONLY_pttrn = "(cms-sw\/cmssw#+[0-9][0-9]*)"
 cmsdist_extra_prs_ONLY_pttrn = "(cms-sw\/cmsdist#+[0-9][0-9]*)"
 cmsdata_extra_prs = "(cmsdata\/[a-zA-Z0-9][a-zA-Z0-9]*#+[0-9][0-9]*)"
 
-short_map = { "workflows" : WF_PATTERN , "arch" : ARCH_PATTERN , "cmssw_queue_pattern" : CMSSW_QUEUE_PATTERN,
-                      "cmsdist_prs" : cmsdist_extra_prs_ONLY_pttrn, # matches more then one
-                      "cmssw_prs" : cmssw_extra_prs_ONLY_pttrn, # matches more then one
-                      "cmsdata_prs" : cmsdata_extra_prs,
-                      "full_cmssw" : full_cmssw_pattern, #
-                      "cmssw_release_queue_pattern" : CMSSW_RELEASE_QUEUE_PATTERN
+short_map = { "workflow(s|)" : [format('^\s*%(workflow)s(\s*,\s*%(workflow)s|)*\s*$', workflow= WF_PATTERN), "workflow"  ]  ,
+              "(arch(itecture(s|))|release)" : [ARCH_PATTERN, "release"] ,
+              "pull_request(s|)" : [format('%(cms_pr)s(\s*,\s*%(cms_pr)s)*', cms_pr=CMS_PR_PATTERN ), "pull_requests" ],
+              "full_cmssw" : ['true|false', "full_release"],
+              "jenkins_slave" : [ '[a-zA-Z][a-zA-Z0-9_-]+' , "jenkins_slave"]
                       }
 
 def get_last_commit(pr):
@@ -260,45 +258,72 @@ def check_test_cmd_new(first_line, repo):
     if m.group(6): wfs = ",".join(set(m.group(6).replace(" ","").split(",")))
     if m.group(11):
       for pr in [x.strip().split('/github.com/',1)[-1].replace('/pull/','#').strip('/') for x in m.group(11).split(",")]:
-        while '//' in pr: pr = pr.repalce('//','/')
+        while '//' in pr: pr = pr.replace('//','/')
         if pr.startswith('#'): pr = repo+pr
         prs.append(pr)
     if m.group(20): cmssw_que = m.group(20)
     return (True, "", ','.join(prs), wfs, cmssw_que)
   return (False, "", "", "", "")
 
-def parse_extra_params(first_line, full_comment):
+
+def parse_extra_params(first_line, full_comment, repo):
   # check first line
   # if not "test parameters" in full_comment.splitlines()[0]:
+  print ('full comment first line', full_comment[0])
+
   if not "test parameters" in first_line:
     print("not a proper multiline comment")
     return {}  # return empty
 
+  error_lines = []
   matched_extra_args = dict()
   #for l in full_comment.splitlines():
-  for l in full_comment:
+
+  for l in full_comment[1:]:
+    if not '=' in l:
+      error_lines.append('= not found in line arg: ' + l)
+      continue
+
+    l = l.replace(" ", "")
+    if l.startswith('-'):
+      l = l[1:]
 
     for k, pttrn in short_map.items():
-      # pttrn = cherry_picked_map[k]
-      if l.find('=') is -1:
-        # only the first line should match this, or the = is missing in the comment, skip if it's missing
+
+      line_args = l.split('=', 1)
+      key_is_matching = re.match(k, line_args[0], re.I)
+      values_are_matching = re.match(pttrn[0], line_args[1], re.I)
+
+      print(line_args, k, pttrn)
+      if not key_is_matching and not values_are_matching:
+        # none is matching because maybe its not the proper line yet
         continue
 
-      line_args = l.replace(" ", "")
+      # note something is wrong with one OR the other at this point, suggesting typo or such
+      if not key_is_matching:
+        error_lines.append('key pattern is wrong in: ' + l)
+        break
+      if not values_are_matching:
+        error_lines.append('values are wrong in: ' + l)
+        break
 
-      if line_args.find(',') is -1:
-        extra_vals = [line_args.split("=")[1]]
-      else:
-        line_args = line_args.replace("=", " ")
-        extra_vals = [x for x in re.compile('\s*[,|\s+]\s*').split(line_args)]
-      list_of_matches = []
+      if pttrn[1] == "pull_requests":
+        prs = []
+        for pr in [x.strip().split('/github.com/',1)[-1].replace('/pull/','#').strip('/') for x in line_args[1].split(",")]:
+          while '//' in pr: pr = pr.replace('//','/')
+          if pr.startswith('#'): pr = repo+pr
+          prs.append(pr)
+        line_args[1] = ",".join(prs)
 
-      for v in extra_vals:
-        if re.match(pttrn, v):
-          list_of_matches.append(v)
+      matched_extra_args[pttrn[1]] = line_args[1]
 
-      if list_of_matches:
-        matched_extra_args[k] = list_of_matches
+      #print(l)
+      break
+
+  if error_lines:
+    matched_extra_args['errors'] = error_lines
+    print('errors are:')
+    for er in error_lines: print(er)
 
   return matched_extra_args
 
@@ -310,11 +335,16 @@ def multiline_check_function(first_line, comment_lines, repository):
     print('non proper multiline comment')
     return multiline_comment_ok, {}
 
-  extra_params = parse_extra_params(first_line, comment_lines)
+  extra_params = parse_extra_params(first_line, comment_lines, repository)
+
   print('comment lines size: ' , len(comment_lines))  # prints the length of the list
   # first line might be right, but none of the provided lines that follows. check number of meaningful params
-  if len(extra_params.keys()) > 0:
+  if len(extra_params.keys()) > 0 and not "errors" in extra_params:
     multiline_comment_ok = True
+
+  # add ml comment true for printing prurposes
+  #multiline_comment_ok = True
+
   return multiline_comment_ok, extra_params
 
 def get_changed_files(repo, pr, use_gh_patch=False):
@@ -551,6 +581,11 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
   comp_warnings = False
   extra_testers = []
   all_comments = [issue]
+
+  '''
+  start of parsing comments section
+  '''
+
   for c in issue.get_comments(): all_comments.append(c)
   for comment in all_comments:
     commenter = comment.user.login.encode("ascii", "ignore")
@@ -734,16 +769,22 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
         valid_multiline_comment , test_params = multiline_check_function(first_line, comment_lines, repository)
         if valid_multiline_comment:
           global_test_params = test_params
-          print("multiline comments:")
+          print("valid multiline comments:")
           print(json.dumps(test_params, indent=1, sort_keys=True))
           continue
 
         test_cmd_func = check_test_cmd
         if new_tests: test_cmd_func = check_test_cmd_new
         ok, v1, v2, v3, v4 = test_cmd_func(first_line, repository)
-        #  if the multiline comment is in there
+
+        #  if valid global params were set and not overwritten by the last comment, use them
+        if ok and global_test_params and first_line == "please test":
+          #  overwrite function args and ok
+          print("get the parameters from global params")
+          print("current defaults:", global_test_params)
 
         if ok:
+
           cmsdist_pr = v1
           cmssw_prs = v2
           extra_wfs = v3
@@ -811,6 +852,13 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
           signatures["orp"] = "pending"
           mustClose = False
       continue
+
+  '''
+  end of parsing comments section
+  '''
+
+  
+
 
   if push_test_issue:
     auto_close_push_test_issue = True
@@ -987,6 +1035,8 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
   # get release managers
   SUPER_USERS = read_repo_file(repo_config, "super-users.yaml", [])
   releaseManagersList = ", ".join(["@" + x for x in set(releaseManagers + SUPER_USERS)])
+
+  print(global_test_params)
 
   #For now, only trigger tests for cms-sw/cmssw and cms-sw/cmsdist
   if create_test_property:
