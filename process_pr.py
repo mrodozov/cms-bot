@@ -69,6 +69,7 @@ cmsdata_extra_prs = "(cmsdata\/[a-zA-Z0-9][a-zA-Z0-9]*#+[0-9][0-9]*)"
 
 short_map = { "workflow(s|)" : [format('^\s*%(workflow)s(\s*,\s*%(workflow)s|)*\s*$', workflow= WF_PATTERN), "workflow"  ]  ,
               "(arch(itecture(s|))|release)" : [ARCH_PATTERN, "release"] ,
+              #"(release_queue|queue)" : [CMSSW_RELEASE_QUEUE_PATTERN ,"release_queue"],
               "pull_request(s|)" : [format('%(cms_pr)s(\s*,\s*%(cms_pr)s)*', cms_pr=CMS_PR_PATTERN ), "pull_requests" ],
               "full_cmssw" : ['true|false', "full_release"],
               "jenkins_slave" : [ '[a-zA-Z][a-zA-Z0-9_-]+' , "jenkins_slave"]
@@ -101,6 +102,7 @@ def read_repo_file(repo_config, repo_file, default=None):
 #
 # creates a properties file to trigger the test of the pull request
 #
+
 def create_properties_file_tests(repository, pr_number, cmsdist_pr, cmssw_prs, dryRun, abort=False, req_type="tests", repo_config=None, extra_prop=None , new_tests=False):
   if abort: req_type = "abort"
   repo_parts = repository.split("/")
@@ -265,6 +267,13 @@ def check_test_cmd_new(first_line, repo):
     return (True, "", ','.join(prs), wfs, cmssw_que)
   return (False, "", "", "", "")
 
+def get_prs_list_from_string(pr_string="", repo_string=""):
+  prs = []
+  for pr in [x.strip().split('/github.com/',1)[-1].replace('/pull/','#').strip('/') for x in pr_string.split(",")]:
+    while '//' in pr: pr = pr.replace('//','/')
+    if pr.startswith('#'): pr = repo_string+pr
+    prs.append(pr)
+  return prs
 
 def parse_extra_params(first_line, full_comment, repo):
   # check first line
@@ -308,11 +317,7 @@ def parse_extra_params(first_line, full_comment, repo):
         break
 
       if pttrn[1] == "pull_requests":
-        prs = []
-        for pr in [x.strip().split('/github.com/',1)[-1].replace('/pull/','#').strip('/') for x in line_args[1].split(",")]:
-          while '//' in pr: pr = pr.replace('//','/')
-          if pr.startswith('#'): pr = repo+pr
-          prs.append(pr)
+        prs = get_prs_list_from_string(line_args[1], repo)
         line_args[1] = ",".join(prs)
 
       matched_extra_args[pttrn[1]] = line_args[1]
@@ -857,8 +862,8 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
   end of parsing comments section
   '''
 
-  
-
+  #global_test_params:
+  #if cmsdist_pr
 
   if push_test_issue:
     auto_close_push_test_issue = True
@@ -974,7 +979,7 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
     labels.append("fully-signed")
   if need_external: labels.append("requires-external")
   labels = set(labels)
-  print("New Labels:",sorted(labels))
+  print("New Labels:", sorted(labels))
 
   new_categories  = set ([])
   for nc_lab in pkg_categories:
@@ -1036,7 +1041,49 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
   SUPER_USERS = read_repo_file(repo_config, "super-users.yaml", [])
   releaseManagersList = ", ".join(["@" + x for x in set(releaseManagers + SUPER_USERS)])
 
+  print('printing default values before reassigning')
   print(global_test_params)
+
+  # add extra cmsdist, cmssw prs and workflows for testing
+
+  cmsdist_pr = "cms-sw/cmsdist#124, cms-sw/cmsdist#125"
+  cmssw_prs = "cms-sw/cmssw#135, cms-sw/cmssw#136"
+  extra_wfs = "136.76, 136.761"
+  release_arch = "slc7_amd64_gcc900"
+
+  if global_test_params:
+    if cmsdist_pr:
+      prs = get_prs_list_from_string(cmsdist_pr, repo_org+'/cmsdist')
+      print('add latest cmsdist prs to existing defaults ... ')
+      print(prs)
+      global_test_params['pull_requests'] = global_test_params['pull_requests'] + ',' + ",".join(prs)
+      # overwrite cmsdist prs variable to use in create property function before using the default global params
+      cmsdist_pr = ','.join([pullr for pullr in global_test_params['pull_requests'].split(',') if pullr.find('cmsdist') is not -1])
+      print('cmsdist prs: ', cmsdist_pr)
+
+    if cmssw_prs:
+      prs = get_prs_list_from_string(cmssw_prs, repo_org+'/cmssw')
+      print('add latest cmssw prs to existing defaults ...')
+      print(prs)
+      global_test_params['pull_requests'] = global_test_params['pull_requests'] + ',' + ",".join(prs)
+      # see above section, same story
+      cmssw_prs = ','.join([pullr for pullr in global_test_params['pull_requests'].split(',') if pullr.find('cmssw') is not -1])
+      print('cmssw prs: ', cmssw_prs)
+
+    if extra_wfs:
+      print('add extra wfs to existing defaults ...')
+      print(extra_wfs)
+      global_test_params['workflow'] = global_test_params['workflow'] + "," + extra_wfs.replace(" ", "")
+
+    if release_arch:
+      print('change release archs with')
+      print(release_arch)
+      global_test_params['release'] = release_arch
+
+  print('printing default values after reassigning')
+  print(global_test_params)
+
+  # if global params exist, change the please test provided params with global test params
 
   #For now, only trigger tests for cms-sw/cmssw and cms-sw/cmsdist
   if create_test_property:
@@ -1044,6 +1091,7 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
     if trigger_test_on_signature and has_categories_approval: tests_requested = True
     if tests_requested:
       prs = ['%s#%s' % (repository,prId)]
+
       for p in [x for x in cmsdist_pr.replace(' ','').split(',') if x]:
         if '#' not in p: p='%s/cmsdist#%s' % (repo_org, p)
         prs.append(p)
@@ -1070,6 +1118,8 @@ def process_pr(repo_config, gh, repo, issue, dryRun, cmsbuild_user=None, force=F
         if ignore_tests: extra_prop['IGNORE_BOT_TESTS'] = ",".join(ignore_tests)
         if enabled_tests: extra_prop['ENABLE_BOT_TESTS'] = ",".join(enabled_tests)
         if extra_wfs: extra_prop['MATRIX_EXTRAS'] = extra_wfs
+        if global_test_params['full_cmssw'] : extra_prop['BUILD_WITH_FULL_CMSSW'] = global_test_params['full_cmssw']
+        if global_test_params['jenkins_slave'] : extra_prop['USE_JENKINS_SLAVE'] = global_test_params['jenkins_slave']
         create_properties_file_tests( repository, prId, cmsdist_pr, cmssw_prs, dryRun, abort=False, repo_config=repo_config, extra_prop=extra_prop, new_tests=new_tests)
     elif abort_test:
       if not dryRun:
