@@ -82,9 +82,7 @@ if __name__ == "__main__":
   if not cmmnd:
     cmmnd = argv[1:]
 
-  job = {'exit_code':0, 'command':'true'}
-  job['command_is_string'] = cmmnd_is_string
-  job['command'] = cmmnd
+  job = {'exit_code':0, 'command':'true', 'command_is_string':cmmnd_is_string, 'command':cmmnd }
   stop_monitoring = False
 
   job_thd = Thread(target=run_job, args=(job,))
