@@ -29,16 +29,6 @@ def orderStatsByName(externalsStats=None):
 
 # create a default github file with stats so if elastic search fails, try to get it
 
-# resources functions are kept in cmsutils.py which is basically reading nproc and free outputs instead of using psuitl or anything else
-# memory is used as it is in (bytes?) , cpu is multiplied by 1.5 (use 50% more) when used to run the relvals
-# ES stats are read and dump in all.jobs with the hits and then processed with es_workflow_stats from es_utils
-# the result is the jobs.json which contains time cpu rss rss_avg rss_max cpu_avg cpu_max where the cpu and rss are the average of the cpu_75 and rss_75 from all hits
-# https://github.com/cms-sw/cms-bot/blob/master/es_utils.py#L165
-# im writing this as comment so I don't have to read it in code every time :/
-# using cpu_75 and rss_75 for memory and cpu metrics
-# Ordering of which job goes first by what metric in jobs/jobscheduler.py
-# https://github.com/cms-sw/cms-bot/blob/master/jobs/jobscheduler.py#L79
-
 class ResourceManager(object):
     def __init__(self, architecture, cmsdist_branch, cpu_percent_usage, memory_percent_usage, njobs, lastNdays):
         self.machineResources = { "total": {"cpu_75": cpu_percent_usage*MachineCPUCount, "rss_75" : memory_percent_usage*MachineMemoryGB*10737418 },
@@ -46,6 +36,7 @@ class ResourceManager(object):
         self.externalsStats = None# get them from elastic search
         self.resourcesAllocatedForExternals = {} # resources that were alocated for given externals, say root -> "root": {"rss":"", cpu:""}
         self.jobsOrderMetric = "cpu_75" # default to cpu
+        self.missingExternalsStrategy = None # runFirst, runLast
     
     def allocResourcesForExternals(self, externalsList=[]): # return ordered list for externals that can be started
         # first, strip the names from build-*++version and make a tmp name to full name dict.
@@ -56,22 +47,29 @@ class ResourceManager(object):
             ext_name_to_fullname_dict[short_name]=e
         externalsList_shortNames = ext_name_to_fullname_dict.keys()
         # if record for an external is not available, allocate it 1/4th of the resources and run it first
-        # OR allocate all resources for each missing external, forcing it to build last
-        
+        # OR allocate all resources for each missing external, forcing it to build last. this should
         externals_to_run = []
         for ext in externalsList_shortNames:
-            # find the latest record by ordering the records by timestamp
-            ex_stats = self.externalsStats[ext][0]
-            if (ex_stats["cpu_75"] <= self.machineResources["available"]["cpu_75"] 
-                and ex_stats["rss_75"] <= self.machineResources["available"]["rss_75"]):
-                self.resourcesAllocatedForExternals[ext] = {}
+            if ext not in self.externalsStats:
+                # external is not found, this should happen only for new externals. get the first element whichever it is and change its properties
+                self.externalsStats[ext] = [{"name":ext, "cpu_75":self.machineResources["total"]["cpu_75"]/4,"rss_75":self.machineResources["total"]["rss_75"]/10 }]
+            externals_to_run.append(self.externalsStats[ext][0])        
+        # first order them by metric and then run over to alloc resources
+        externalsList_sorted = [ext for ext in sorted(externals_to_run, key=lambda x: x[self.jobsOrderMetric], reverse=True)]
+
+        externals_to_run = []
+        for ex_stats in externalsList_sorted:
+            if (ex_stats["cpu_75"]<=self.machineResources["available"]["cpu_75"] and ex_stats["rss_75"]<=self.machineResources["available"]["rss_75"]):
+                self.resourcesAllocatedForExternals[ex_stats["name"]] = {}
                 for prm in ["rss_75", "cpu_75"]:
                     self.machineResources["available"][prm] -= ex_stats[prm]
-                    self.resourcesAllocatedForExternals[ext][prm] = ex_stats[prm]
-                externals_to_run.append(ex_stats)
-        return [ext["name"] for ext in sorted(externals_to_run, key=lambda x: x[self.jobsOrderMetric], reverse=True)]
+                    self.resourcesAllocatedForExternals[ex_stats["name"]][prm] = ex_stats[prm]
+                externals_to_run.append(ext_name_to_fullname_dict[ex_stats["name"]]) # this gets the full names
+        return externals_to_run
 
     def releaseResourcesForExternal(self, external): # external name
+        # get the external name only
+        external = external.split('+')[1]
         for prm in ["rss_75", "cpu_75"]:
             self.machineResources["available"][prm] += self.resourcesAllocatedForExternals[external][prm]
         del self.resourcesAllocatedForExternals[external]
@@ -87,15 +85,16 @@ if __name__ == "__main__":
     page_size = 0
     #print(format('(NOT cpu_max:0) AND (exit_code:0) AND cmsdist:%(cmsdist_branch)s AND architecture:%(architecture)s', cmsdist_branch=str(cmsdist), architecture=arch))    
     externals_stats=getExternalsESstats(cmsdist, arch, days, page_size)
-    orderedExternalsStats = orderStatsByName(externals_stats)
-    
+    orderedExternalsStats = orderStatsByName(externals_stats)    
     res_manager = ResourceManager(arch, cmsdist, 100, 100, 16, 30)
     res_manager.externalsStats = orderedExternalsStats
-    ext_to_run = ["yoda", "sherpa", "rivet", "root", "dd4hep", "herwigpp", "hector"]
+    ext_to_run = ["build-external+yoda+2.10.0-cms", "build-external+sherpa+2.10.0-cms", "build-external+rivet+2.10.0-cms", "build-external+root+2.10.0-cms", "build-external+dd4hep+2.10.0-cms", "build-external+herwigpp+2.10.0-cms", "build-external+hector+2.10.0-cms", "build-external+professor+2.10.0-cms", "build-external+py2-root_numpy+2.10.0-cms", "build-external+thepeg+2.10.0-cms", "build-external+fasthadd+2.10.0-cms"]
+    print('externals before selection: \n', ext_to_run, ' in total: ', len(ext_to_run))
+    print('machine resources before alocation' ,res_manager.machineResources)
     result_ext_to_run = res_manager.allocResourcesForExternals(ext_to_run)
-    print(result_ext_to_run)
+    print('selected to run: \n', result_ext_to_run, ' in total: ', len(result_ext_to_run))
     print('allocated resources: ', res_manager.resourcesAllocatedForExternals)
-    print('machine resources' ,res_manager.machineResources)
+    print('machine resources after alocation' ,res_manager.machineResources)
     print('release the resources:')
     for i in result_ext_to_run: res_manager.releaseResourcesForExternal(i)
     print('allocated resources: ', res_manager.resourcesAllocatedForExternals)
