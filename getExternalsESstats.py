@@ -5,7 +5,7 @@ from es_utils import es_query, format
 import json
 from cmsutils import MachineCPUCount, MachineMemoryGB
 
-def getExternalsESstats(cmsdist='*', arch='*', lastNdays=7, page_size=0):
+def getExternalsESstats(cmsdist='*', arch='*', lastNdays=30, page_size=0):
     stats = es_query(index='externals_stats_summary_testindex*',
                      query=format('cmsdist:%(cmsdist_branch)s AND architecture:%(architecture)s',
                                   cmsdist_branch=str(cmsdist),
@@ -104,6 +104,10 @@ if __name__ == "__main__":
     #print(json.dumps(externals_stats, indent=2, sort_keys=True, separators=(',', ': ')))
     with open('stats_file.json', 'w') as sf:
         sf.write(json.dumps(externals_stats, indent=1, sort_keys=True))
+    externals_stats_named = {}
+    externals_stats_named["MachineMemoryGB"] = MachineMemoryGB
+    externals_stats_named["MachineCPUCount"] = MachineCPUCount
+    externals_stats_named["externals"] = orderStatsByName(externals_stats)
     with open('stats_file_named.json', 'w') as sf:
-        sf.write(json.dumps(orderStatsByName(externals_stats), indent=1, sort_keys=True))
+        sf.write(json.dumps(externals_stats_named, indent=1, sort_keys=True))
     
