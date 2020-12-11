@@ -157,6 +157,13 @@ def delete_index(index):
   if not index.startswith('cmssdt-'): index = 'cmssdt-' + index
   send_request(index+'/',method='DELETE', ignore_doc=True)
 
+def reindex_with_new_name(index, alias_name):
+  # thats how we copy an index.
+  if not index.startswith('cmssdt-'): index = 'cmssdt-' + index
+  uri = '_reindex'
+  payload = { "source": {"index": index }, "dest": { "index": alias_name }}
+  send_request(uri=uri,payload=json.dumps(payload).encode("ascii","ignore"),method='POST', ignore_doc=True)
+
 def es_query(index,query,start_time,end_time,page_start=0,page_size=10000,timestamp_field="@timestamp", scroll=False, max_count=-1, fields=None):
   query_str = get_es_query(query=query, start_time=start_time,end_time=end_time,page_start=page_start,page_size=page_size,timestamp_field=timestamp_field, fields=fields)
   if scroll: return get_payload_wscroll(index, query_str, max_count)
